@@ -1,0 +1,59 @@
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# PlatformIO
+.pio/
+.piolibdeps/
+*.bin
+*.elf
+*.hex
+
+# ESP32
+sdkconfig
+sdkconfig.old
+
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# Node-RED
+node-red/data/
+docker/nodered/data/
+
+# MQTT / Mosquitto
+mosquitto.db
+
+# Docker
+docker-compose.override.yml
+
+# Environment variables
+.env
+.env.*
+
+# C/C++
+build/
+bin/
+obj/
+*.o
+*.a
+*.out
+
+# Temporary
+tmp/
+temp/
+.cache/
+
+# Coverage
+coverage/
+
+# Wokwi
+wokwi-state.json
