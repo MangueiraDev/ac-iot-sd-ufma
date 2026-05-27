@@ -5,6 +5,15 @@
 Sistema IoT para monitorização e controle inteligente de ar-condicionado em salas de aula utilizando ESP32, MQTT, Node-RED e InterSCity. 
 O projeto realiza aquisição de dados ambientais, automação do acionamento do ar-condicionado via infravermelho e supervisão em tempo real.
 
+## Relatório Técnico
+
+O relatório descritivo e detalhado do sistema está disponível em:
+
+- [RELATORIO_TECNICO.md](RELATORIO_TECNICO.md)
+- [STATUS_IMPLEMENTACAO_GANTT.md](STATUS_IMPLEMENTACAO_GANTT.md)
+- [RELATORIO_TECNICO.pdf](RELATORIO_TECNICO.pdf)
+- [STATUS_IMPLEMENTACAO_GANTT.pdf](STATUS_IMPLEMENTACAO_GANTT.pdf)
+
 ---
 
 # Arquitetura do Sistema

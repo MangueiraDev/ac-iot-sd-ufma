@@ -17,6 +17,8 @@ struct RoomConfig {
     std::string topic;
     std::string status;
     double setpoint;
+    double setpoint_umidade;
+    int setpoint_luz;
     std::string luz;
     double temp_min;
     double temp_max;
@@ -78,10 +80,15 @@ static json gerar_dados(const RoomConfig& sala) {
         {"id_sala", sala.id},
         {"status_ac", sala.status},
         {"setpoint_ac", sala.setpoint},
+        {"setpoint_umidade", sala.setpoint_umidade},
+        {"setpoint_luz", sala.setpoint_luz},
         {"status_luz", sala.luz},
         {"temperatura", std::round(temperatura * 100.0) / 100.0},
         {"umidade", std::round(umidade * 100.0) / 100.0},
         {"luminosidade", luminosidade},
+        {"temperatura_forcada", sala.temp_simulada > 0.0},
+        {"umidade_forcada", sala.umidade_simulada > 0.0},
+        {"luminosidade_forcada", sala.luz_simulada >= 0},
         {"presenca", sala.presenca},
         {"modo_ac", sala.modo_ac},
         {"timestamp", static_cast<long>(std::time(nullptr))}
@@ -176,6 +183,22 @@ static void on_message(struct mosquitto* mosq, void* userdata, const struct mosq
                 }
             }
 
+            if (dados.contains("setpoint_umidade")) {
+                try {
+                    sala.setpoint_umidade = dados["setpoint_umidade"].get<double>();
+                    mudou = true;
+                } catch (...) {
+                }
+            }
+
+            if (dados.contains("setpoint_luz")) {
+                try {
+                    sala.setpoint_luz = dados["setpoint_luz"].get<int>();
+                    mudou = true;
+                } catch (...) {
+                }
+            }
+
             if (dados.contains("luz") && dados["luz"].is_string()) {
                 std::string cmd_luz = dados["luz"].get<std::string>();
                 if (cmd_luz == "ligar" || cmd_luz == "desligar") {
@@ -231,7 +254,12 @@ static void on_message(struct mosquitto* mosq, void* userdata, const struct mosq
 
             if (mudou) {
                 std::cout << "[COMANDO] " << id_sala << " atualizado: AC=" << sala.status
-                          << ", Setpoint=" << sala.setpoint << "°C, Luz=" << sala.luz << "\n";
+                          << ", Setpoint=" << sala.setpoint << "°C"
+                          << ", SetpointUmidade=" << sala.setpoint_umidade << "%"
+                          << ", SetpointLuz=" << sala.setpoint_luz << "lx"
+                          << ", Luz=" << sala.luz
+                          << ", Presenca=" << (sala.presenca ? "sim" : "nao")
+                          << ", Modo=" << sala.modo_ac << "\n";
             }
 
             publish_room(sala);
@@ -248,9 +276,9 @@ int main() {
     if (INTERVALO <= 0) INTERVALO = 20;
 
     SALAS = {
-        {"sala01", {"sala01", "ac-iot/sala01/sensores", "ligado", 22.0, "desligado", 20.0, 25.0, 40.0, 50.0, 300, 500, 0.0, false, 0.0, -1, "ativo"}},
-        {"sala02", {"sala02", "ac-iot/sala02/sensores", "ligado", 24.0, "desligado", 25.0, 35.0, 50.0, 70.0, 800, 1000, 0.0, false, 0.0, -1, "ativo"}},
-        {"sala03", {"sala03", "ac-iot/sala03/sensores", "ligado", 23.0, "desligado", 22.0, 28.0, 45.0, 60.0, 100, 800, 0.0, false, 0.0, -1, "ativo"}}
+        {"sala01", {"sala01", "ac-iot/sala01/sensores", "ligado", 22.0, 55.0, 300, "desligado", 20.0, 25.0, 40.0, 50.0, 300, 500, 0.0, false, 0.0, -1, "ativo"}},
+        {"sala02", {"sala02", "ac-iot/sala02/sensores", "ligado", 24.0, 60.0, 500, "desligado", 25.0, 35.0, 50.0, 70.0, 800, 1000, 0.0, false, 0.0, -1, "ativo"}},
+        {"sala03", {"sala03", "ac-iot/sala03/sensores", "ligado", 23.0, 55.0, 300, "desligado", 22.0, 28.0, 45.0, 60.0, 100, 800, 0.0, false, 0.0, -1, "ativo"}}
     };
 
     mosquitto_lib_init();

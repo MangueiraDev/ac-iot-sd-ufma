@@ -310,12 +310,26 @@
         </div>
 
         <div style="border-top:1px solid var(--border); padding-top:16px;">
-            <div class="section-title" style="margin-bottom:10px;">🌡️ Setpoint AC (Global)</div>
-            <div style="display:flex; align-items:center; gap:16px;">
-                <div class="control-label">Setpoint: <b id="lbl_global_set">22</b>°C</div>
-                <input type="range" min="16" max="30" value="22" step="1" style="flex:1;"
-                    oninput="updateLabel('lbl_global_set', this.value)"
-                    onchange="enviarComandoGlobal('setpoint', parseFloat(this.value))">
+            <div class="section-title" style="margin-bottom:10px;">🌡️ Setpoints da Automação (Global)</div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">
+                <div class="control-row">
+                    <div class="control-label">AC: <b id="lbl_global_set">22</b>°C</div>
+                    <input type="range" min="16" max="30" value="22" step="1"
+                        oninput="updateLabel('lbl_global_set', this.value)"
+                        onchange="enviarComandoGlobal('setpoint', parseFloat(this.value))">
+                </div>
+                <div class="control-row">
+                    <div class="control-label">Umidade: <b id="lbl_global_set_umi">55</b>%</div>
+                    <input type="range" min="30" max="80" value="55" step="1"
+                        oninput="updateLabel('lbl_global_set_umi', this.value)"
+                        onchange="enviarComandoGlobal('setpoint_umidade', parseFloat(this.value))">
+                </div>
+                <div class="control-row">
+                    <div class="control-label">Luz: <b id="lbl_global_set_lux">300</b> lx</div>
+                    <input type="range" min="50" max="1000" value="300" step="10"
+                        oninput="updateLabel('lbl_global_set_lux', this.value)"
+                        onchange="enviarComandoGlobal('setpoint_luz', parseInt(this.value))">
+                </div>
             </div>
         </div>
 
@@ -383,7 +397,7 @@
         function createSalaCard(id) {
             if (salasAtivas.has(id)) return;
             salasAtivas.add(id);
-            state[id] = { ac: 'desligado', setpoint: 22, luz: 'desligado' };
+            state[id] = { ac: 'desligado', setpoint: 22, setpoint_umidade: 55, setpoint_luz: 300, luz: 'desligado' };
 
             const container = document.getElementById('salasContainer');
             const card = document.createElement('div');
@@ -436,6 +450,20 @@
                             <input type="range" id="set_${id}" min="16" max="30" value="22" step="1" 
                                 oninput="updateLabel('lbl_set_${id}', this.value)"
                                 onchange="enviarComandoIndividual('${id}', 'setpoint', parseFloat(this.value))">
+                        </div>
+
+                        <div class="control-row">
+                            <div class="control-label">Setpoint Umidade: <b id="lbl_set_umi_${id}">55</b>%</div>
+                            <input type="range" id="set_umi_${id}" min="30" max="80" value="55" step="1" 
+                                oninput="updateLabel('lbl_set_umi_${id}', this.value)"
+                                onchange="enviarComandoIndividual('${id}', 'setpoint_umidade', parseFloat(this.value))">
+                        </div>
+
+                        <div class="control-row">
+                            <div class="control-label">Setpoint Luz: <b id="lbl_set_lux_${id}">300</b> lx</div>
+                            <input type="range" id="set_lux_${id}" min="50" max="1000" value="300" step="10" 
+                                oninput="updateLabel('lbl_set_lux_${id}', this.value)"
+                                onchange="enviarComandoIndividual('${id}', 'setpoint_luz', parseInt(this.value))">
                         </div>
 
                         <div class="control-row">
@@ -610,6 +638,22 @@
                 const setpoint = data.setpoint_ac !== undefined ? data.setpoint_ac : data.setpoint;
                 document.getElementById(`set_${id}`).value = setpoint;
                 document.getElementById(`lbl_set_${id}`).innerText = setpoint;
+            }
+
+            if (data.setpoint_umidade !== undefined) {
+                state[id].setpoint_umidade = data.setpoint_umidade;
+                const setUmi = document.getElementById(`set_umi_${id}`);
+                const lblUmi = document.getElementById(`lbl_set_umi_${id}`);
+                if (setUmi) setUmi.value = data.setpoint_umidade;
+                if (lblUmi) lblUmi.innerText = data.setpoint_umidade;
+            }
+
+            if (data.setpoint_luz !== undefined) {
+                state[id].setpoint_luz = data.setpoint_luz;
+                const setLux = document.getElementById(`set_lux_${id}`);
+                const lblLux = document.getElementById(`lbl_set_lux_${id}`);
+                if (setLux) setLux.value = data.setpoint_luz;
+                if (lblLux) lblLux.innerText = data.setpoint_luz;
             }
 
             if (data.presenca !== undefined) {

@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AC-IoT UFMA - Acompanhamento</title>
+    <style>
+        :root {
+            --bg: #101827;
+            --panel: #f8fafc;
+            --ink: #111827;
+            --muted: #475569;
+            --primary: #2563eb;
+            --accent: #059669;
+            --danger: #dc2626;
+            --line: #cbd5e1;
+            --shadow: rgba(0, 0, 0, 0.32);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: Arial, Helvetica, sans-serif;
+            overflow: hidden;
+        }
+
+        .deck {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 48px;
+            opacity: 0;
+            transform: translateX(46px) scale(0.985);
+            transition: opacity 420ms ease, transform 420ms ease;
+            pointer-events: none;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+            pointer-events: auto;
+            z-index: 2;
+        }
+
+        .slide.previous {
+            transform: translateX(-46px) scale(0.985);
+        }
+
+        .content {
+            width: min(1120px, 100%);
+            min-height: 640px;
+            background: var(--panel);
+            border-radius: 8px;
+            padding: 56px 64px;
+            box-shadow: 0 24px 60px var(--shadow);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .content::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 10px;
+            background: var(--primary);
+        }
+
+        .cover {
+            background: #f9fafb;
+        }
+
+        .kicker {
+            color: var(--primary);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 18px;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            font-size: 50px;
+            line-height: 1.05;
+            margin: 0 0 20px;
+        }
+
+        h2 {
+            font-size: 42px;
+            line-height: 1.12;
+            margin: 0 0 28px;
+        }
+
+        p {
+            font-size: 24px;
+            line-height: 1.35;
+            margin: 0 0 16px;
+            color: var(--muted);
+        }
+
+        ul, ol {
+            margin: 0;
+            padding-left: 30px;
+        }
+
+        li {
+            font-size: 27px;
+            line-height: 1.35;
+            margin: 12px 0;
+        }
+
+        strong {
+            color: var(--ink);
+        }
+
+        .subtitle {
+            font-size: 28px;
+            color: var(--muted);
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 8px;
+        }
+
+        .status-item {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 16px 18px;
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            font-size: 22px;
+        }
+
+        .tag {
+            white-space: nowrap;
+            font-weight: 700;
+        }
+
+        .done {
+            color: var(--accent);
+        }
+
+        .partial {
+            color: #ca8a04;
+        }
+
+        .critical {
+            color: var(--danger);
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 23px;
+        }
+
+        th, td {
+            border: 1px solid var(--line);
+            padding: 15px 18px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #e2e8f0;
+        }
+
+        .highlight {
+            border-left: 8px solid var(--danger);
+            background: #fff7ed;
+            padding: 22px 26px;
+            margin-bottom: 24px;
+        }
+
+        .highlight p {
+            color: var(--ink);
+            font-weight: 700;
+        }
+
+        .footer {
+            margin-top: 36px;
+            color: var(--muted);
+            font-size: 18px;
+        }
+
+        .project-card {
+            display: grid;
+            grid-template-columns: 230px 1fr;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 28px;
+            font-size: 19px;
+        }
+
+        .project-card div {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .project-card div:nth-child(odd) {
+            background: #e2e8f0;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .project-card div:nth-child(even) {
+            background: #ffffff;
+            color: #1f2937;
+            font-weight: 600;
+        }
+
+        .project-card div:nth-last-child(-n + 2) {
+            border-bottom: 0;
+        }
+
+        .controls {
+            position: fixed;
+            right: 28px;
+            bottom: 24px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-button {
+            width: 44px;
+            height: 44px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: rgba(15, 23, 42, 0.84);
+            color: white;
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        .nav-button:hover {
+            background: var(--primary);
+        }
+
+        .counter {
+            min-width: 76px;
+            text-align: center;
+            border-radius: 999px;
+            padding: 11px 14px;
+            color: white;
+            background: rgba(15, 23, 42, 0.84);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .progress {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            z-index: 10;
+        }
+
+        .progress span {
+            display: block;
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            transition: width 360ms ease;
+        }
+
+        @media print {
+            body {
+                background: white;
+                overflow: visible;
+            }
+
+            .deck {
+                height: auto;
+                overflow: visible;
+            }
+
+            .slide {
+                position: relative;
+                opacity: 1;
+                transform: none;
+                pointer-events: auto;
+                min-height: 100vh;
+                page-break-after: always;
+                padding: 0;
+            }
+
+            .content {
+                box-shadow: none;
+                border-radius: 0;
+                width: 100%;
+                min-height: 100vh;
+            }
+
+            .controls,
+            .progress {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="deck">
+        <section class="slide active">
+            <div class="content cover">
+                <div class="kicker">Acompanhamento da implementação</div>
+                <h1>Gestão Energética dos Ar-Condicionados das Salas de Aula do Prédio Paulo Freire via IoT</h1>
+                <p class="subtitle">UFMA-EC-SD-2026-001</p>
+                <div class="project-card">
+                    <div>Natureza</div>
+                    <div>Projeto Acadêmico — Disciplina de Sistemas Distribuídos</div>
+                    <div>Curso / Instituição</div>
+                    <div>Engenharia da Computação — Universidade Federal do Maranhão (UFMA)</div>
+                    <div>Equipe</div>
+                    <div>Nilton Maciel Mangueira | Cleila Monteiro Dutra Galiza | Guilherme de Aquino Pacheco | Raniere Mendes dos Santos | Tereza Clarice da Silva Rocha</div>
+                    <div>Professor</div>
+                    <div>Prof. Luiz Henrique Neves Rodrigues</div>
+                    <div>Local</div>
+                    <div>Prédio Paulo Freire — Campus Dom Delgado, UFMA, São Luís — MA</div>
+                </div>
+                <div class="footer">Status baseado no relatório técnico e no Gantt de implementação</div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="content">
+                <h2>Objetivo</h2>
+                <ul>
+                    <li>Monitorar temperatura, umidade, luminosidade e presença.</li>
+                    <li>Controlar ar-condicionado e iluminação automaticamente.</li>
+                    <li>Reduzir desperdício energético em salas de aula.</li>
+                    <li>Integrar MQTT, Node-RED, ESP32/Wokwi e InterSCity.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="content">
+                <h2>O que já está funcionando</h2>
+                <ul>
+                    <li>Infraestrutura Docker com Mosquitto, Node-RED e simulador.</li>
+                    <li>Simulador C++ com três salas.</li>
+                    <li>Painel web para monitoramento e controle.</li>
+                    <li>Comunicação MQTT via tópicos de sensores e comandos.</li>
+                    <li>Automação por presença, setpoints e temporização.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="content">
+                <h2>Automação implementada</h2>
+                <ul>
+                    <li>Com presença: luz liga imediatamente.</li>
+                    <li>Com presença contínua por 30s: AC liga.</li>
+                    <li>Sem presença por 30s: luz e AC desligam.</li>
+                    <li>Setpoints controlam temperatura do AC, umidade e luminosidade.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="content">
+                <h2>Status atual</h2>
+                <div class="status-grid">
+                    <div class="status-item"><span>Docker + Mosquitto</span><span class="tag done">Concluído</span></div>
+                    <div class="status-item"><span>Simulador C++</span><span class="tag done">Concluído</span></div>
+                    <div class="status-item"><span>Painel web</span><span class="tag done">Funcional</span></div>
+                    <div class="status-item"><span>Node-RED</span><span class="tag partial">Parcial</span></div>
+                    <div class="status-item"><span>Documentação</span><span class="tag partial">Parcial</span></div>
+                    <div class="status-item"><span>Testes formais</span><span class="tag partial">Parcial</span></div>
+                    <div class="status-item"><span>InterSCity</span><span class="tag critical">Prioridade alta</span></div>
+                    <div class="status-item"><span>ESP32 + Wokwi</span><span class="tag critical">Pendente crítico</span></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="content">
+                <h2>Pendência crítica</h2>
+                <div class="highlight">
+                    <p>Simulação ESP32 com PlatformIO e Wokwi ainda não foi implementada.</p>
+                </div>
+                <ul>
+                    <li>Projeto PlatformIO e circuito Wokwi.</li>
+                    <li>Sensores DHT22, PIR e SCT-013.</li>
+                    <li>Relé virtual e transmissor IR.</li>
+                    <li>Firmware MQTT no ESP32.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="content">
+                <h2>Prioridades</h2>
+                <ol>
+                    <li>Ativar comunicação com InterSCity.</li>
+                    <li>Cadastrar salas e UUIDs.</li>
+                    <li>Enviar telemetria e eventos de controle.</li>
+                    <li>Criar simulação ESP32 com PlatformIO/Wokwi.</li>
+                    <li>Consolidar payload MQTT/HTTP.</li>
+                    <li>Documentar e executar testes C1 a C5.</li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="content">
+                <h2>Cronograma resumido</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Período</th>
+                            <th>Entrega</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>28/05 a 03/06</td>
+                            <td>InterSCity</td>
+                        </tr>
+                        <tr>
+                            <td>01/06 a 12/06</td>
+                            <td>ESP32, Wokwi e MQTT final</td>
+                        </tr>
+                        <tr>
+                            <td>05/06 a 12/06</td>
+                            <td>Node-RED e dashboard</td>
+                        </tr>
+                        <tr>
+                            <td>16/06 a 21/06</td>
+                            <td>Testes finais e ajustes</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="content">
+                <h2>Próximos passos</h2>
+                <ul>
+                    <li>Validar InterSCity com envio real de telemetria.</li>
+                    <li>Implementar ESP32/Wokwi como simulação oficial do projeto.</li>
+                    <li>Alinhar payloads finais entre MQTT, Node-RED e InterSCity.</li>
+                    <li>Formalizar testes com evidências.</li>
+                    <li>Preparar demonstração final.</li>
+                </ul>
+            </div>
+        </section>
+    </main>
+    <div class="controls" aria-label="Navegação dos slides">
+        <button class="nav-button" id="prevSlide" type="button" aria-label="Slide anterior">‹</button>
+        <div class="counter" id="slideCounter">1 / 9</div>
+        <button class="nav-button" id="nextSlide" type="button" aria-label="Próximo slide">›</button>
+    </div>
+    <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+    <script>
+        const slides = Array.from(document.querySelectorAll('.slide'));
+        const counter = document.getElementById('slideCounter');
+        const progressBar = document.getElementById('progressBar');
+        const prevButton = document.getElementById('prevSlide');
+        const nextButton = document.getElementById('nextSlide');
+        let currentSlide = 0;
+
+        function showSlide(index) {
+            const nextIndex = Math.max(0, Math.min(index, slides.length - 1));
+            slides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === nextIndex);
+                slide.classList.toggle('previous', i < nextIndex);
+            });
+            currentSlide = nextIndex;
+            counter.textContent = `${currentSlide + 1} / ${slides.length}`;
+            progressBar.style.width = `${((currentSlide + 1) / slides.length) * 100}%`;
+            prevButton.disabled = currentSlide === 0;
+            nextButton.disabled = currentSlide === slides.length - 1;
+        }
+
+        prevButton.addEventListener('click', () => showSlide(currentSlide - 1));
+        nextButton.addEventListener('click', () => showSlide(currentSlide + 1));
+
+        document.addEventListener('keydown', (event) => {
+            if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(event.key)) {
+                event.preventDefault();
+                showSlide(currentSlide + 1);
+            }
+            if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(event.key)) {
+                event.preventDefault();
+                showSlide(currentSlide - 1);
+            }
+            if (event.key === 'Home') showSlide(0);
+            if (event.key === 'End') showSlide(slides.length - 1);
+        });
+
+        showSlide(0);
+    </script>
+</body>
+</html>
