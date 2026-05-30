@@ -3,824 +3,1097 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AC-IoT Smart Control Panel</title>
+    <title>AC-IoT Controle Operacional</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
     <style>
         :root {
-            --bg: #0f172a;
-            --card: #1e293b;
-            --primary: #3b82f6;
-            --accent: #10b981;
-            --danger: #ef4444;
-            --text: #f8fafc;
-            --text-dim: #94a3b8;
-            --border: #334155;
+            color-scheme: dark;
+            --bg: #090d12;
+            --panel: #111821;
+            --panel-soft: #151e29;
+            --line: #263342;
+            --line-strong: #35465a;
+            --text: #edf2f7;
+            --muted: #96a4b4;
+            --primary: #5b9bff;
+            --ok: #24c46b;
+            --danger: #ef5350;
+            --warn: #f2a93b;
+            --shadow: 0 20px 70px rgba(0, 0, 0, 0.32);
+            --rooms-width: 690px;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
             margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.35;
         }
 
-        h1 {
-            font-size: 2rem;
-            font-weight: 800;
-            background: linear-gradient(to right, #3b82f6, #10b981);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 30px;
+        button,
+        input,
+        select {
+            font: inherit;
         }
 
-        .status-bar {
-            width: 100%;
-            max-width: 1100px;
-            background: var(--card);
-            padding: 12px 24px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            margin-bottom: 24px;
-            display: flex;
-            justify-content: center;
+        button {
+            cursor: pointer;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .app {
+            width: min(1500px, 100%);
+            margin: 0 auto;
+            padding: 14px 18px;
+        }
+
+        .header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 20px;
             align-items: center;
-            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .title h1 {
+            margin: 0;
+            font-size: clamp(1.35rem, 2vw, 1.9rem);
+            letter-spacing: 0;
+        }
+
+        .title p {
+            margin: 4px 0 0;
+            color: var(--muted);
             font-size: 0.9rem;
         }
 
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            background: var(--danger);
-            border-radius: 50%;
-            box-shadow: 0 0 8px var(--danger);
-        }
-
-        .connected .status-dot {
-            background: var(--accent);
-            box-shadow: 0 0 8px var(--accent);
-        }
-
-        .dashboard {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-            gap: 24px;
-            width: 100%;
-            max-width: 1100px;
-        }
-
-        .sala-card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
-            transition: all 0.3s ease;
+        .statusbar {
             display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .sala-card:hover {
-            transform: translateY(-4px);
-            border-color: var(--primary);
-        }
-
-        .sala-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 12px;
-        }
-
-        .sala-name {
-            font-weight: 700;
-            font-size: 1.2rem;
-            color: #fff;
-        }
-
-        .sala-time {
-            font-size: 0.75rem;
-            color: var(--text-dim);
-            background: #0f172a;
-            padding: 4px 8px;
-            border-radius: 6px;
-        }
-
-        .section-title {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-dim);
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .monitor-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            background: rgba(15, 23, 42, 0.4);
-            padding: 12px;
-            border-radius: 12px;
-        }
-
-        .monitor-item {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .monitor-item label {
-            font-size: 0.7rem;
-            color: var(--text-dim);
-        }
-
-        .monitor-item span {
-            font-weight: 600;
-            font-size: 1rem;
-        }
-
-        .controls-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .control-row {
-            display: flex;
-            flex-direction: column;
+            flex-wrap: wrap;
+            justify-content: flex-end;
             gap: 8px;
         }
 
-        .control-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.85rem;
-            font-weight: 500;
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 32px;
+            padding: 5px 10px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: #0d131a;
+            color: var(--muted);
+            font-size: 0.78rem;
+            white-space: nowrap;
         }
 
-        .control-label b {
-            color: var(--primary);
+        .chip.link {
+            color: #d7e6ff;
+        }
+
+        .lamp {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+            flex: 0 0 auto;
+        }
+
+        .is-connected .mqtt-lamp,
+        .lamp.on {
+            background: var(--ok);
+            box-shadow: 0 0 0 3px rgba(36, 196, 107, 0.12);
+        }
+
+        .lamp.off {
+            background: var(--danger);
+            box-shadow: 0 0 0 3px rgba(239, 83, 80, 0.12);
+        }
+
+        .global-bar {
+            display: grid;
+            grid-template-columns: minmax(0, max-content) auto;
+            width: fit-content;
+            max-width: 100%;
+            gap: 8px;
+            align-items: center;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: var(--panel);
+            padding: 7px 10px;
+            margin-bottom: 12px;
+        }
+
+        .setpoint-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 205px);
+            gap: 8px;
+            max-width: max-content;
+        }
+
+        .field {
+            display: grid;
+            gap: 3px;
+            min-width: 0;
+        }
+
+        .field label {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            color: var(--muted);
+            font-size: 0.74rem;
+        }
+
+        .field b {
+            color: var(--text);
+            font-size: 0.84rem;
         }
 
         input[type="range"] {
             width: 100%;
             accent-color: var(--primary);
-            cursor: pointer;
         }
 
-        .button-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+        .global-bar input[type="range"] {
+            max-width: 205px;
+        }
+
+        select {
+            min-height: 34px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #0d131a;
+            color: var(--text);
+            padding: 6px 8px;
         }
 
         .btn {
-            padding: 10px;
+            min-height: 32px;
+            border: 1px solid var(--line-strong);
             border-radius: 8px;
-            border: 1px solid var(--border);
-            background: #0f172a;
+            background: #0d131a;
             color: var(--text);
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
+            padding: 6px 10px;
+            font-weight: 750;
         }
 
         .btn:hover {
-            background: var(--border);
+            background: #172231;
         }
 
-        .btn.active-ac {
-            background: rgba(59, 130, 246, 0.2);
-            border-color: var(--primary);
-            color: var(--primary);
+        .btn.primary {
+            border-color: rgba(91, 155, 255, 0.62);
+            color: #dceaff;
+            background: rgba(91, 155, 255, 0.12);
         }
 
-        .btn.active-luz {
-            background: rgba(16, 185, 129, 0.2);
-            border-color: var(--accent);
-            color: var(--accent);
+        .btn.apply {
+            min-width: 70px;
+            padding-inline: 9px;
         }
 
-        .btn-apply {
-            background: var(--primary);
-            color: #fff;
-            border: none;
-            margin-top: 10px;
-            width: 100%;
+        .btn.ok {
+            border-color: rgba(36, 196, 107, 0.55);
+            color: #c8f7dc;
         }
 
-        .btn-apply:hover {
-            filter: brightness(1.2);
-            transform: scale(1.02);
+        .btn.danger {
+            border-color: rgba(239, 83, 80, 0.55);
+            color: #ffd2d0;
         }
 
-        .console-box {
-            width: 100%;
-            max-width: 1100px;
-            margin-top: 30px;
-            background: #020617;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
+        .btn.small {
+            min-height: 28px;
+            padding: 4px 8px;
+            font-size: 0.76rem;
         }
 
-        .console-header {
+        .layout {
+            display: grid;
+            grid-template-columns: var(--rooms-width) minmax(380px, 440px);
+            width: fit-content;
+            max-width: 100%;
+            gap: 14px;
+            align-items: start;
+        }
+
+        .events-panel {
+            width: min(100%, calc(var(--rooms-width) + 14px + 440px));
+            margin-top: 14px;
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: var(--panel);
+            overflow: hidden;
+        }
+
+        .panel-head {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--line);
+            background: var(--panel-soft);
+        }
+
+        .panel-head h2 {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .panel-head p {
+            margin: 1px 0 0;
+            color: var(--muted);
+            font-size: 0.7rem;
+        }
+
+        .panel-body {
+            padding: 8px 10px;
+        }
+
+        .rooms-title {
+            width: var(--rooms-width);
+            max-width: 100%;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .room-actions {
             display: flex;
-            justify-content: space-between;
-            font-size: 0.8rem;
-            color: var(--text-dim);
-            margin-bottom: 10px;
+            gap: 6px;
+            justify-content: flex-end;
         }
 
-        #debugLog {
-            height: 150px;
-            overflow-y: auto;
-            font-family: 'Fira Code', monospace;
-            font-size: 0.8rem;
-            line-height: 1.6;
+        .room-table {
+            display: grid;
+            gap: 5px;
+            width: var(--rooms-width);
+            max-width: 100%;
+        }
+
+        .room-row {
+            display: grid;
+            grid-template-columns: 130px repeat(3, 82px) 140px;
+            gap: 8px;
+            align-items: center;
+            width: 100%;
+            max-width: 100%;
+            min-height: 48px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: #101822;
+            color: var(--text);
+            padding: 6px 9px;
+            text-align: left;
+        }
+
+        .room-row:hover,
+        .room-row.selected {
+            border-color: var(--primary);
+            background: #142033;
+        }
+
+        .room-name {
+            font-weight: 850;
+            font-size: 0.86rem;
+        }
+
+        .room-time {
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 0.64rem;
+        }
+
+        .metric span,
+        .state span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.62rem;
+        }
+
+        .metric b {
+            display: block;
+            margin-top: 1px;
+            font-size: 0.84rem;
+        }
+
+        .state-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+        }
+
+        .state {
+            min-width: 0;
+        }
+
+        .state b,
+        .signal {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 1px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            min-width: 0;
+        }
+
+        .signal strong {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 12px;
+        }
+
+        .mode-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 4px 9px;
+            color: var(--muted);
+            font-size: 0.74rem;
+            font-weight: 850;
+        }
+
+        .mode-badge.ok {
+            color: var(--ok);
+            border-color: rgba(36, 196, 107, 0.4);
+        }
+
+        .mode-badge.danger {
+            color: var(--danger);
+            border-color: rgba(239, 83, 80, 0.45);
+        }
+
+        .section {
+            padding: 10px 0;
+            border-top: 1px solid var(--line);
+        }
+
+        .section:first-child {
+            border-top: 0;
+            padding-top: 0;
+        }
+
+        .section h3 {
+            margin: 0 0 8px;
+            color: var(--muted);
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .control-list {
+            display: grid;
+            gap: 7px;
+        }
+
+        .control-line {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .segmented {
+            display: inline-grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            padding: 3px;
+            background: #0c1219;
+        }
+
+        .segmented button {
+            min-width: 52px;
+            min-height: 26px;
+            border: 0;
+            border-radius: 7px;
+            background: transparent;
+            color: var(--muted);
+            font-weight: 800;
+            font-size: 0.76rem;
+        }
+
+        .segmented button.on.active {
+            background: rgba(36, 196, 107, 0.18);
+            color: #c8f7dc;
+        }
+
+        .segmented button.off.active {
+            background: rgba(239, 83, 80, 0.18);
+            color: #ffd2d0;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 10px;
+        }
+
+        .test-apply {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+            align-items: end;
+            margin-top: 10px;
+        }
+
+        .pending {
+            min-height: 18px;
+            margin-top: 6px;
+            color: var(--warn);
+            font-size: 0.76rem;
+        }
+
+        .log {
+            height: 130px;
+            overflow: auto;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.72rem;
+            color: #d8e2ed;
+        }
+
+        .log-entry {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            overflow-wrap: anywhere;
+        }
+
+        .log-entry .in {
+            color: var(--ok);
+            font-weight: 900;
+        }
+
+        .log-entry .out {
+            color: var(--primary);
+            font-weight: 900;
+        }
+
+        .empty {
+            border: 1px dashed var(--line);
+            border-radius: 10px;
+            padding: 20px;
+            color: var(--muted);
+            text-align: center;
         }
 
         .toast {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: var(--accent);
-            color: #fff;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            transform: translateY(100px);
-            transition: transform 0.3s ease;
-            z-index: 1000;
+            right: 18px;
+            bottom: 18px;
+            max-width: min(420px, calc(100vw - 36px));
+            border: 1px solid rgba(36, 196, 107, 0.45);
+            border-radius: 9px;
+            background: #102218;
+            color: var(--text);
+            padding: 11px 13px;
+            box-shadow: var(--shadow);
+            transform: translateY(120px);
+            transition: transform 180ms ease;
+            z-index: 20;
         }
 
         .toast.show {
             transform: translateY(0);
         }
+
+        @media (max-width: 1100px) {
+            .layout,
+            .header,
+            .global-bar {
+                grid-template-columns: 1fr;
+                width: auto;
+            }
+
+            .events-panel {
+                width: auto;
+            }
+
+            .setpoint-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                max-width: none;
+            }
+
+            .global-bar input[type="range"] {
+                max-width: none;
+            }
+
+            .statusbar {
+                justify-content: flex-start;
+            }
+
+            .sidebar {
+                position: static;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .app {
+                padding: 12px;
+            }
+
+            .setpoint-grid,
+            .room-row,
+            .test-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .state-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
     </style>
 </head>
 <body>
+    <main class="app">
+        <header class="header">
+            <div class="title">
+                <h1>AC-IoT Controle Operacional</h1>
+                <p>Monitoramento das salas, atuação direta, automação e testes controlados.</p>
+            </div>
+            <div id="statusWrapper" class="statusbar">
+                <span class="chip"><span class="lamp mqtt-lamp"></span><span id="statusText">MQTT conectando</span></span>
+                <a class="chip link" href="http://localhost:3000/resources" target="_blank" rel="noreferrer">InterSCity</a>
+                <a class="chip link" href="http://localhost:4000/resources/00000000-0000-4000-8000-000000000101/data/last" target="_blank" rel="noreferrer">Data Collector</a>
+                <span class="chip">Salas <b id="roomCount">0</b></span>
+                <span class="chip">Atualizado <b id="lastUpdate">--</b></span>
+            </div>
+        </header>
 
-    <h1>AC-IoT Smart Control</h1>
-
-    <div id="statusWrapper" class="status-bar">
-        <div class="status-dot"></div>
-        <span id="statusText">Conectando ao Broker...</span>
-    </div>
-
-    <div class="global-controls" style="width:100%; max-width:1100px; background:var(--card); padding:20px; border-radius:16px; border:1px solid var(--border); margin-bottom:24px; display:flex; flex-direction:column; gap:20px;">
-        
-        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px;">
-            <div class="global-group">
-                <div class="section-title">🛡️ Modo da Sala</div>
-                <div class="button-group">
-                    <button class="btn btn-apply" onclick="enviarComandoGlobalExt({modo_ac: 'ativo'})">Ativar Todas</button>
-                    <button class="btn" style="border-color:var(--danger); color:var(--danger);" onclick="enviarComandoGlobalExt({modo_ac: 'desativado', comando: 'desligar'})">Desativar Todas</button>
+        <section class="global-bar">
+            <div>
+                <div class="setpoint-grid">
+                    <div class="field">
+                        <label for="globalTemp">Setpoint AC <b id="lblGlobalTemp">22°C</b></label>
+                        <input id="globalTemp" type="range" min="16" max="30" step="1" value="22" oninput="setText('lblGlobalTemp', this.value + '°C')">
+                    </div>
+                    <div class="field">
+                        <label for="globalHum">Setpoint umidade <b id="lblGlobalHum">55%</b></label>
+                        <input id="globalHum" type="range" min="30" max="80" step="1" value="55" oninput="setText('lblGlobalHum', this.value + '%')">
+                    </div>
+                    <div class="field">
+                        <label for="globalLux">Setpoint iluminação <b id="lblGlobalLux">300 lx</b></label>
+                        <input id="globalLux" type="range" min="50" max="1000" step="10" value="300" oninput="setText('lblGlobalLux', this.value + ' lx')">
+                    </div>
                 </div>
             </div>
-            <div class="global-group">
-                <div class="section-title">❄️ Ar Condicionado</div>
-                <div class="button-group">
-                    <button class="btn btn-apply" onclick="enviarComandoGlobal('comando', 'ligar')">Ligar Todos</button>
-                    <button class="btn" style="border-color:var(--danger); color:var(--danger);" onclick="enviarComandoGlobal('comando', 'desligar')">Desligar Todos</button>
+            <button class="btn primary apply" type="button" title="Aplicar estes setpoints em todas as salas" onclick="applyGlobalSetpoints()">Aplicar</button>
+        </section>
+
+        <section class="layout">
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="rooms-title">
+                        <div>
+                            <h2>Salas</h2>
+                            <p>Auto: Node-RED controla AC/luz por presença, ambiente e setpoints.</p>
+                        </div>
+                        <div class="room-actions">
+                            <button class="btn small ok" type="button" title="Permite que a automação atue nas salas" onclick="sendGlobal({modo_ac:'ativo'}, 'Ativar automação global')">Auto ON</button>
+                            <button class="btn small danger" type="button" title="Bloqueia a automação e desliga o AC" onclick="sendGlobal({modo_ac:'desativado', comando:'desligar'}, 'Desativar automação global')">Auto OFF</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div id="roomsContainer" class="room-table">
+                        <div class="empty">Aguardando dados MQTT das salas.</div>
+                    </div>
                 </div>
             </div>
-            <div class="global-group">
-                <div class="section-title">💡 Iluminação</div>
-                <div class="button-group">
-                    <button class="btn active-luz" onclick="enviarComandoGlobal('luz', 'ligar')">Ligar Todas</button>
-                    <button class="btn" style="border-color:var(--danger); color:var(--danger);" onclick="enviarComandoGlobal('luz', 'desligar')">Desligar Todas</button>
+
+            <aside class="panel sidebar">
+                <div class="panel-head">
+                    <div>
+                        <h2 id="detailTitle">Ambiente de testes</h2>
+                        <p id="detailSubtitle">Ajuste condições, controle atuadores e aplique em uma sala.</p>
+                    </div>
+                    <span id="detailBadge" class="mode-badge">--</span>
                 </div>
+                <div id="detailPanel" class="panel-body">
+                    <div class="empty">Nenhuma sala selecionada.</div>
+                </div>
+            </aside>
+        </section>
+
+        <section class="panel events-panel">
+            <div class="panel-head">
+                <div>
+                    <h2>Eventos MQTT</h2>
+                    <p>Registro compacto de leituras, comandos e confirmações.</p>
+                </div>
+                <button class="btn small" type="button" onclick="clearLog()">Limpar</button>
             </div>
-        </div>
-
-        <div style="border-top:1px solid var(--border); padding-top:16px;">
-            <div class="section-title" style="margin-bottom:10px;">🌡️ Setpoints da Automação (Global)</div>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">
-                <div class="control-row">
-                    <div class="control-label">AC: <b id="lbl_global_set">22</b>°C</div>
-                    <input type="range" min="16" max="30" value="22" step="1"
-                        oninput="updateLabel('lbl_global_set', this.value)"
-                        onchange="enviarComandoGlobal('setpoint', parseFloat(this.value))">
-                </div>
-                <div class="control-row">
-                    <div class="control-label">Umidade: <b id="lbl_global_set_umi">55</b>%</div>
-                    <input type="range" min="30" max="80" value="55" step="1"
-                        oninput="updateLabel('lbl_global_set_umi', this.value)"
-                        onchange="enviarComandoGlobal('setpoint_umidade', parseFloat(this.value))">
-                </div>
-                <div class="control-row">
-                    <div class="control-label">Luz: <b id="lbl_global_set_lux">300</b> lx</div>
-                    <input type="range" min="50" max="1000" value="300" step="10"
-                        oninput="updateLabel('lbl_global_set_lux', this.value)"
-                        onchange="enviarComandoGlobal('setpoint_luz', parseInt(this.value))">
-                </div>
+            <div class="panel-body">
+                <div id="debugLog" class="log"></div>
             </div>
-        </div>
+        </section>
+    </main>
 
-        <div style="border-top:1px solid var(--border); padding-top:16px;">
-            <div class="section-title" style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
-                <span>🌍 Simulação Rápida (Sensores)</span>
-                <select id="sim_target" style="padding:6px; border-radius:6px; background:#0f172a; color:var(--text); border:1px solid var(--border); font-size:0.85rem; font-weight:600;">
-                    <option value="all">Todas as Salas</option>
-                    <option value="sala01">Sala 01</option>
-                    <option value="sala02">Sala 02</option>
-                    <option value="sala03">Sala 03</option>
-                </select>
-            </div>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:16px;">
-                <div class="control-row">
-                    <div class="control-label">Temperatura: <b id="lbl_global_temp">25</b>°C</div>
-                    <input type="range" min="10" max="45" value="25" step="0.5" 
-                        oninput="updateLabel('lbl_global_temp', this.value)"
-                        onchange="enviarComandoSimulador('temperatura', parseFloat(this.value))">
-                </div>
-                <div class="control-row">
-                    <div class="control-label">Umidade: <b id="lbl_global_umi">50</b>%</div>
-                    <input type="range" min="0" max="100" value="50" step="1" 
-                        oninput="updateLabel('lbl_global_umi', this.value)"
-                        onchange="enviarComandoSimulador('umidade', parseFloat(this.value))">
-                </div>
-                <div class="control-row">
-                    <div class="control-label">Luz (lux): <b id="lbl_global_lux">500</b></div>
-                    <input type="range" min="0" max="1500" value="500" step="10" 
-                        oninput="updateLabel('lbl_global_lux', this.value)"
-                        onchange="enviarComandoSimulador('luminosidade', parseInt(this.value))">
-                </div>
-                <div class="control-row" style="display:flex; align-items:center; padding-top:10px;">
-                    <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:500; cursor:pointer;">
-                        <input type="checkbox" style="width:18px; height:18px; accent-color:var(--primary);" onchange="enviarComandoSimulador('presenca', this.checked)">
-                        Forçar Presença
-                    </label>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="dashboard" id="salasContainer"></div>
-
-    <div class="console-box">
-        <div class="console-header">
-            <span>📟 MQTT MONITOR (Comandos)</span>
-            <button onclick="document.getElementById('debugLog').innerHTML=''" style="background:none; border:1px solid var(--border); color:var(--text-dim); cursor:pointer; border-radius:4px; padding:2px 8px;">Limpar</button>
-        </div>
-        <div id="debugLog"></div>
-    </div>
-
-    <div id="toast" class="toast">Mensagem enviada!</div>
+    <div id="toast" class="toast">Mensagem enviada.</div>
 
     <script>
         const mqttBroker = window.location.hostname || "localhost";
         const mqttPort = 9001;
-        const clientId = "web_panel_" + Math.random().toString(16).substr(2, 8);
+        const clientId = "web_panel_" + Math.random().toString(16).slice(2, 10);
+        const rooms = {};
+        const roomOrder = [];
+        let selectedRoom = null;
+        let testDraft = null;
         let mqttClient = null;
+        let reconnectTimer = null;
 
-        // Lista dinâmica de salas (preenchida automaticamente via descoberta MQTT)
-        const salasAtivas = new Set();
-        const state = {};
+        const defaultRoom = () => ({
+            temperatura: null,
+            umidade: null,
+            luminosidade: null,
+            presenca: null,
+            status_ac: "desligado",
+            status_luz: "desligado",
+            modo_ac: "ativo",
+            setpoint_ac: 22,
+            setpoint_umidade: 55,
+            setpoint_luz: 300,
+            lastSeen: null,
+            pending: {}
+        });
 
-        function createSalaCard(id) {
-            if (salasAtivas.has(id)) return;
-            salasAtivas.add(id);
-            state[id] = { ac: 'desligado', setpoint: 22, setpoint_umidade: 55, setpoint_luz: 300, luz: 'desligado' };
+        function setText(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = value;
+        }
 
-            const container = document.getElementById('salasContainer');
-            const card = document.createElement('div');
-            card.className = 'sala-card';
-            card.id = `card_${id}`;
-            card.innerHTML = `
-                <div class="sala-header">
-                    <div style="display:flex; flex-direction:column;">
-                        <span class="sala-name">${id.toUpperCase()}</span>
-                        <span class="sala-time" id="time_${id}">--:--:--</span>
+        function fmt(value, suffix, decimals = 0) {
+            if (value === null || value === undefined || value === "") return "--";
+            const numeric = Number(value);
+            if (Number.isFinite(numeric)) return numeric.toFixed(decimals) + suffix;
+            return String(value) + suffix;
+        }
+
+        function normalizeOnOff(value) {
+            if (value === "ligar") return "ligado";
+            if (value === "desligar") return "desligado";
+            return value || "desligado";
+        }
+
+        function isOn(value) {
+            return normalizeOnOff(value) === "ligado" || value === true || value === "true" || value === 1;
+        }
+
+        function boolText(value) {
+            if (value === true || value === "true" || value === 1) return "Sim";
+            if (value === false || value === "false" || value === 0) return "Não";
+            return "--";
+        }
+
+        function lamp(value) {
+            return `<span class="lamp ${isOn(value) ? "on" : "off"}"></span>`;
+        }
+
+        function getRoom(id) {
+            if (!rooms[id]) {
+                rooms[id] = defaultRoom();
+                roomOrder.push(id);
+                roomOrder.sort();
+                if (!selectedRoom) selectedRoom = id;
+            }
+            return rooms[id];
+        }
+
+        function renderRooms() {
+            const container = document.getElementById("roomsContainer");
+            document.getElementById("roomCount").innerText = roomOrder.length;
+
+            if (roomOrder.length === 0) {
+                container.innerHTML = '<div class="empty">Aguardando dados MQTT das salas.</div>';
+                renderDetail();
+                return;
+            }
+
+            container.innerHTML = roomOrder.map((id) => {
+                const room = rooms[id];
+                const selected = id === selectedRoom ? " selected" : "";
+                const autoActive = room.modo_ac !== "desativado";
+                return `
+                    <button class="room-row${selected}" type="button" onclick="selectRoom('${id}')">
+                        <div>
+                            <div class="room-name">${id.toUpperCase()}</div>
+                            <div class="room-time">${room.lastSeen || "Sem leitura"}</div>
+                        </div>
+                        <div class="metric"><span>Temp.</span><b>${fmt(room.temperatura, "°C", 1)}</b></div>
+                        <div class="metric"><span>Umidade</span><b>${fmt(room.umidade, "%", 0)}</b></div>
+                        <div class="metric"><span>Luz amb.</span><b>${fmt(room.luminosidade, " lx", 0)}</b></div>
+                        <div class="state-grid">
+                            <div class="state"><span>AC</span><b title="${normalizeOnOff(room.status_ac)}">${lamp(room.status_ac)}</b></div>
+                            <div class="state"><span>Luz</span><b title="${normalizeOnOff(room.status_luz)}">${lamp(room.status_luz)}</b></div>
+                            <div class="state"><span>Auto</span><b title="${autoActive ? "ativo" : "desativado"}">${autoActive ? lamp(true) : lamp(false)}</b></div>
+                        </div>
+                    </button>
+                `;
+            }).join("");
+
+            renderDetail();
+        }
+
+        function renderDetail() {
+            const title = document.getElementById("detailTitle");
+            const subtitle = document.getElementById("detailSubtitle");
+            const badge = document.getElementById("detailBadge");
+            const panel = document.getElementById("detailPanel");
+
+            if (!selectedRoom || !rooms[selectedRoom]) {
+                title.innerText = "Ambiente de testes";
+                subtitle.innerText = "Ajuste condições e controles; depois escolha onde aplicar.";
+                badge.style.display = "none";
+                panel.innerHTML = '<div class="empty">Nenhuma sala selecionada.</div>';
+                return;
+            }
+
+            const room = rooms[selectedRoom];
+            const autoActive = room.modo_ac !== "desativado";
+            const draft = getTestDraft(room);
+            title.innerText = "Ambiente de testes";
+            subtitle.innerText = "Ajuste condições e controles; depois escolha onde aplicar.";
+            badge.style.display = "none";
+
+            panel.innerHTML = `
+                <section class="section">
+                    <h3>Ambiente de testes</h3>
+                    <div class="test-grid">
+                        <div class="field">
+                            <label for="testTemp">Temperatura <b id="lblTestTemp">${fmt(draft.temperatura, "°C", 1)}</b></label>
+                            <input id="testTemp" type="range" min="10" max="45" step="0.5" value="${draft.temperatura}" oninput="setTestValue('temperatura', Number(this.value)); setText('lblTestTemp', Number(this.value).toFixed(1) + '°C')">
+                        </div>
+                        <div class="field">
+                            <label for="testHum">Umidade <b id="lblTestHum">${fmt(draft.umidade, "%", 0)}</b></label>
+                            <input id="testHum" type="range" min="0" max="100" step="1" value="${draft.umidade}" oninput="setTestValue('umidade', Number(this.value)); setText('lblTestHum', this.value + '%')">
+                        </div>
+                        <div class="field">
+                            <label for="testLux">Luminosidade <b id="lblTestLux">${fmt(draft.luminosidade, " lx", 0)}</b></label>
+                            <input id="testLux" type="range" min="0" max="1500" step="10" value="${draft.luminosidade}" oninput="setTestValue('luminosidade', Number(this.value)); setText('lblTestLux', this.value + ' lx')">
+                        </div>
+                        <div class="field">
+                            <label for="testPresence">Presença <b id="lblTestPres">${boolText(draft.presenca)}</b></label>
+                            <select id="testPresence" onchange="setTestValue('presenca', this.value === 'true'); setText('lblTestPres', this.value === 'true' ? 'Sim' : 'Não')">
+                                <option value="true" ${draft.presenca === true ? "selected" : ""}>Sim</option>
+                                <option value="false" ${draft.presenca === false ? "selected" : ""}>Não</option>
+                            </select>
+                        </div>
                     </div>
-                    <div id="badge_${id}" class="status-badge" style="background:var(--primary); color:#fff; padding:4px 10px; border-radius:20px; font-size:0.7rem; font-weight:700; transition:all 0.3s;">ATIVO</div>
-                </div>
-
-                <div class="monitor-section">
-                    <div class="section-title">📊 Monitoramento</div>
-                    <div class="monitor-grid">
-                        <div class="monitor-item">
-                            <label>Temperatura</label>
-                            <span id="temp_${id}">--°C</span>
-                        </div>
-                        <div class="monitor-item">
-                            <label>Umidade</label>
-                            <span id="umi_${id}">--%</span>
-                        </div>
-                        <div class="monitor-item">
-                            <label>Luminosidade</label>
-                            <span id="luz_${id}">--lx</span>
-                        </div>
-                        <div class="monitor-item">
-                            <label>Luz</label>
-                            <span id="stat_luz_${id}" style="font-weight:700;">--</span>
-                        </div>
-                        <div class="monitor-item">
-                            <label>Presença</label>
-                            <span id="pres_${id}">--</span>
-                        </div>
-                        <div class="monitor-item">
-                            <label>Ar Condicionado</label>
-                            <span id="stat_${id}" style="font-weight:700;">--</span>
-                        </div>
+                    <h3 style="margin-top:14px">Controle direto</h3>
+                    <div class="control-list">
+                        ${testSegmentedControl("Ar-condicionado", "testAcCommand", room.status_ac, "ligar", "desligar", draft.controls.testAcCommand)}
+                        ${testSegmentedControl("Iluminação", "testLightCommand", room.status_luz, "ligar", "desligar", draft.controls.testLightCommand)}
+                        ${testSegmentedControl("Automação", "testAutoMode", autoActive ? "ligado" : "desligado", "ativo", "desativado", draft.controls.testAutoMode)}
                     </div>
-                </div>
+                    <div class="pending">${pendingText(room)}</div>
+                </section>
 
-                <div class="controls-section">
-                    <div class="section-title">🎮 Atuadores</div>
-                    <div class="controls-grid">
-                        <div class="control-row">
-                            <div class="control-label">Setpoint AC: <b id="lbl_set_${id}">22</b>°C</div>
-                            <input type="range" id="set_${id}" min="16" max="30" value="22" step="1" 
-                                oninput="updateLabel('lbl_set_${id}', this.value)"
-                                onchange="enviarComandoIndividual('${id}', 'setpoint', parseFloat(this.value))">
+                <section class="section">
+                    <h3>Aplicar cenário</h3>
+                    <div class="test-apply">
+                        <div class="field">
+                            <label for="testTarget">Sala</label>
+                            <select id="testTarget">
+                                <option value="all">TODAS AS SALAS</option>
+                                ${roomOrder.map((id) => `<option value="${id}" ${id === selectedRoom ? "selected" : ""}>${id.toUpperCase()}</option>`).join("")}
+                            </select>
                         </div>
+                        <button class="btn primary apply" type="button" onclick="sendTestPayload(document.getElementById('testTarget').value)">Aplicar</button>
+                    </div>
+                </section>
+            `;
+        }
 
-                        <div class="control-row">
-                            <div class="control-label">Setpoint Umidade: <b id="lbl_set_umi_${id}">55</b>%</div>
-                            <input type="range" id="set_umi_${id}" min="30" max="80" value="55" step="1" 
-                                oninput="updateLabel('lbl_set_umi_${id}', this.value)"
-                                onchange="enviarComandoIndividual('${id}', 'setpoint_umidade', parseFloat(this.value))">
-                        </div>
-
-                        <div class="control-row">
-                            <div class="control-label">Setpoint Luz: <b id="lbl_set_lux_${id}">300</b> lx</div>
-                            <input type="range" id="set_lux_${id}" min="50" max="1000" value="300" step="10" 
-                                oninput="updateLabel('lbl_set_lux_${id}', this.value)"
-                                onchange="enviarComandoIndividual('${id}', 'setpoint_luz', parseInt(this.value))">
-                        </div>
-
-                        <div class="control-row">
-                            <div class="control-label">Temp. Sala (Sensor): <b id="lbl_sim_temp_${id}">25</b>°C</div>
-                            <input type="range" id="sim_temp_${id}" min="10" max="45" value="25" step="0.5" 
-                                oninput="updateLabel('lbl_sim_temp_${id}', this.value)"
-                                onchange="enviarComandoIndividual('${id}', 'temperatura', parseFloat(this.value))">
-                        </div>
-
-                        <div class="control-row">
-                            <div class="control-label">Umidade (Sensor): <b id="lbl_sim_umi_${id}">50</b>%</div>
-                            <input type="range" id="sim_umi_${id}" min="0" max="100" value="50" step="1" 
-                                oninput="updateLabel('lbl_sim_umi_${id}', this.value)"
-                                onchange="enviarComandoIndividual('${id}', 'umidade', parseFloat(this.value))">
-                        </div>
-
-                        <div class="control-row">
-                            <div class="control-label">Luminosidade (Sensor): <b id="lbl_sim_lux_${id}">500</b> lx</div>
-                            <input type="range" id="sim_lux_${id}" min="0" max="1500" value="500" step="10" 
-                                oninput="updateLabel('lbl_sim_lux_${id}', this.value)"
-                                onchange="enviarComandoIndividual('${id}', 'luminosidade', parseInt(this.value))">
-                        </div>
-
-                        <div class="control-row">
-                            <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:500; cursor:pointer; margin-top:4px;">
-                                <input type="checkbox" id="sim_pres_${id}" style="width:18px; height:18px; accent-color:var(--primary);" onchange="enviarComandoIndividual('${id}', 'presenca', this.checked)">
-                                Simular Presença Humana
-                            </label>
-                        </div>
-                        
-                        <div class="button-group" style="margin-bottom: 12px;">
-                            <button id="btn_modo_${id}" class="btn active-ac" onclick="toggleModo('${id}')" style="width: 100%;">🛡️ MODO DA SALA: ATIVO</button>
-                        </div>
-                        <div class="button-group">
-                            <button id="btn_ac_${id}" class="btn" onclick="toggleAC('${id}')">❄️ AC: OFF</button>
-                            <button id="btn_luz_${id}" class="btn" onclick="toggleLuz('${id}')">💡 Luz: OFF</button>
-                        </div>
+        function testSegmentedControl(label, inputId, value, onValue, offValue, draftControl) {
+            const selectedValue = draftControl?.value ?? (isOn(value) ? onValue : offValue);
+            const active = selectedValue === onValue;
+            const help = label === "Automação" ? "Auto ligado: Node-RED pode atuar conforme presença, temperatura, umidade, luz e setpoints." : label;
+            return `
+                <div class="control-line">
+                    <div class="signal" title="${help}">${active ? lamp(true) : lamp(false)}<strong>${label}</strong></div>
+                    <input id="${inputId}" type="hidden" value="${selectedValue}" data-dirty="${draftControl?.dirty === true}">
+                    <div class="segmented">
+                        <button class="on ${active ? "active" : ""}" type="button" onclick="setTestSwitch('${inputId}', '${onValue}', this)">ON</button>
+                        <button class="off ${!active ? "active" : ""}" type="button" onclick="setTestSwitch('${inputId}', '${offValue}', this)">OFF</button>
                     </div>
                 </div>
             `;
-            container.appendChild(card);
         }
 
-        function updateLabel(id, val) { document.getElementById(id).innerText = val; }
+        function setTestSwitch(inputId, value, button) {
+            updateTestSwitch(inputId, value, button);
+            if (inputId === "testAcCommand" || inputId === "testLightCommand") {
+                updateTestSwitch("testAutoMode", "desativado");
+            }
+        }
 
-        function toggleModo(id) {
-            const isAtivo = state[id].modo_ac !== 'desativado';
-            const novoModo = isAtivo ? 'desativado' : 'ativo';
-            state[id].modo_ac = novoModo;
-            
-            const btn = document.getElementById(`btn_modo_${id}`);
-            btn.innerText = `🛡️ MODO DA SALA: ${novoModo === 'ativo' ? 'ATIVO (Auto)' : 'DESATIVADO'}`;
-            btn.classList.toggle('active-ac', novoModo === 'ativo');
-            btn.style.borderColor = novoModo === 'ativo' ? 'var(--primary)' : 'var(--danger)';
-            btn.style.color = novoModo === 'ativo' ? 'var(--primary)' : 'var(--danger)';
-            
-            if (novoModo === 'desativado') {
-                state[id].ac = 'desligado';
-                const btnAc = document.getElementById(`btn_ac_${id}`);
-                if (btnAc) {
-                    btnAc.innerText = '❄️ AC: OFF';
-                    btnAc.classList.remove('active-ac');
-                }
-                const statEl = document.getElementById(`stat_${id}`);
-                if (statEl) {
-                    statEl.innerText = 'DESLIGADO';
-                    statEl.style.color = 'var(--danger)';
-                }
-                const badgeEl = document.getElementById(`badge_${id}`);
-                if (badgeEl) {
-                    badgeEl.innerText = 'DESATIVADO';
-                    badgeEl.style.background = 'var(--danger)';
-                    badgeEl.style.boxShadow = 'none';
-                }
-                document.getElementById(`card_${id}`).style.borderColor = 'var(--border)';
-                
-                enviarComandoIndividualExt(id, { modo_ac: 'desativado', comando: 'desligar' });
+        function updateTestSwitch(inputId, value, button) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            input.value = value;
+            input.dataset.dirty = "true";
+            if (testDraft) testDraft.controls[inputId] = { value, dirty: true };
+            const group = button?.closest(".segmented") || input.nextElementSibling;
+            if (!group) return;
+            const activeClass = value === "ligar" || value === "ativo" ? "on" : "off";
+            group.querySelectorAll("button").forEach((item) => item.classList.toggle("active", item.classList.contains(activeClass)));
+            const lampEl = group.closest(".control-line")?.querySelector(".lamp");
+            if (lampEl) {
+                const active = value === "ligar" || value === "ativo";
+                lampEl.classList.toggle("on", active);
+                lampEl.classList.toggle("off", !active);
+            }
+        }
+
+        function pendingText(room) {
+            const items = Object.entries(room.pending || {});
+            if (items.length === 0) return "";
+            return "Pendente: " + items.map(([key, value]) => `${key}=${value}`).join(", ");
+        }
+
+        function selectRoom(id) {
+            if (selectedRoom !== id) testDraft = null;
+            selectedRoom = id;
+            renderRooms();
+        }
+
+        function getTestDraft(room) {
+            if (!testDraft || testDraft.roomId !== selectedRoom) {
+                testDraft = {
+                    roomId: selectedRoom,
+                    temperatura: room.temperatura ?? 25,
+                    umidade: room.umidade ?? 50,
+                    luminosidade: room.luminosidade ?? 500,
+                    presenca: room.presenca === true,
+                    controls: {}
+                };
+            }
+            return testDraft;
+        }
+
+        function setTestValue(field, value) {
+            if (testDraft) testDraft[field] = value;
+        }
+
+        function applyPayloadToRoom(id, payload, source) {
+            const room = getRoom(id);
+
+            if (payload.temperatura !== undefined) room.temperatura = Number(payload.temperatura);
+            if (payload.umidade !== undefined) room.umidade = Number(payload.umidade);
+            if (payload.luminosidade !== undefined) room.luminosidade = Number(payload.luminosidade);
+            if (payload.presenca !== undefined) room.presenca = payload.presenca === true || payload.presenca === "true" || payload.presenca === 1;
+
+            if (payload.status_ac !== undefined) room.status_ac = normalizeOnOff(payload.status_ac);
+            if (payload.comando !== undefined) room.status_ac = payload.comando === "ligar" ? "ligado" : "desligado";
+            if (payload.status_luz !== undefined) room.status_luz = normalizeOnOff(payload.status_luz);
+            if (payload.luz !== undefined) room.status_luz = payload.luz === "ligar" ? "ligado" : "desligado";
+
+            if (payload.modo_ac !== undefined) room.modo_ac = payload.modo_ac;
+            if (payload.setpoint_ac !== undefined) room.setpoint_ac = Number(payload.setpoint_ac);
+            if (payload.setpoint !== undefined) room.setpoint_ac = Number(payload.setpoint);
+            if (payload.setpoint_umidade !== undefined) room.setpoint_umidade = Number(payload.setpoint_umidade);
+            if (payload.setpoint_luz !== undefined) room.setpoint_luz = Number(payload.setpoint_luz);
+
+            if (source === "sensores") {
+                room.lastSeen = new Date().toLocaleTimeString();
+                document.getElementById("lastUpdate").innerText = room.lastSeen;
+                room.pending = {};
             } else {
-                const badgeEl = document.getElementById(`badge_${id}`);
-                if (badgeEl) {
-                    badgeEl.innerText = 'ATIVO';
-                    badgeEl.style.background = 'var(--primary)';
-                    badgeEl.style.boxShadow = '0 0 10px var(--primary)';
-                }
-                document.getElementById(`card_${id}`).style.borderColor = 'var(--primary)';
-                
-                enviarComandoIndividualExt(id, { modo_ac: 'ativo' });
+                reconcilePending(room, payload);
             }
         }
 
-        function toggleAC(id) {
-            const isOn = state[id].ac === 'ligado';
-            const novoCmd = isOn ? 'desligar' : 'ligar';
-            state[id].ac = novoCmd === 'ligar' ? 'ligado' : 'desligado';
-            
-            const btn = document.getElementById(`btn_ac_${id}`);
-            btn.innerText = `❄️ AC: ${novoCmd === 'ligar' ? 'ON' : 'OFF'}`;
-            btn.classList.toggle('active-ac', novoCmd === 'ligar');
-            
-            const statEl = document.getElementById(`stat_${id}`);
-            const badgeEl = document.getElementById(`badge_${id}`);
-            if (statEl) {
-                statEl.innerText = novoCmd === 'ligar' ? 'LIGADO' : 'DESLIGADO';
-                statEl.style.color = novoCmd === 'ligar' ? 'var(--primary)' : 'var(--danger)';
-            }
-            if (badgeEl) {
-                badgeEl.innerText = novoCmd === 'ligar' ? 'LIGADO' : 'DESLIGADO';
-                badgeEl.style.background = novoCmd === 'ligar' ? 'var(--primary)' : 'var(--danger)';
-                badgeEl.style.boxShadow = novoCmd === 'ligar' ? '0 0 10px var(--primary)' : 'none';
-            }
-            document.getElementById(`card_${id}`).style.borderColor = novoCmd === 'ligar' ? 'var(--primary)' : 'var(--border)';
-
-            enviarComandoIndividualExt(id, { comando: novoCmd });
+        function reconcilePending(room, payload) {
+            if (!room.pending) room.pending = {};
+            if (payload.comando !== undefined) delete room.pending.ac;
+            if (payload.luz !== undefined) delete room.pending.luz;
+            if (payload.modo_ac !== undefined) delete room.pending.modo;
+            if (payload.setpoint !== undefined || payload.setpoint_ac !== undefined) delete room.pending.setpoint;
+            if (payload.setpoint_umidade !== undefined) delete room.pending.umidade;
+            if (payload.setpoint_luz !== undefined) delete room.pending.luminosidade;
         }
 
-        function toggleLuz(id) {
-            state[id].luz = state[id].luz === 'ligado' ? 'desligado' : 'ligado';
-            
-            // Feedback visual imediato
-            const btn = document.getElementById(`btn_luz_${id}`);
-            const isOn = state[id].luz === 'ligado';
-            btn.innerText = `💡 Luz: ${isOn ? 'ON' : 'OFF'}`;
-            btn.classList.toggle('active-luz', isOn);
-
-            enviarComandoIndividual(id, 'luz', isOn ? 'ligar' : 'desligar');
+        function markPending(id, payload) {
+            const targets = id === "all" ? roomOrder : [id];
+            targets.forEach((roomId) => {
+                const room = getRoom(roomId);
+                if (payload.comando !== undefined) room.pending.ac = payload.comando;
+                if (payload.luz !== undefined) room.pending.luz = payload.luz;
+                if (payload.modo_ac !== undefined) room.pending.modo = payload.modo_ac;
+                if (payload.setpoint !== undefined || payload.setpoint_ac !== undefined) room.pending.setpoint = payload.setpoint ?? payload.setpoint_ac;
+                if (payload.setpoint_umidade !== undefined) room.pending.umidade = payload.setpoint_umidade;
+                if (payload.setpoint_luz !== undefined) room.pending.luminosidade = payload.setpoint_luz;
+            });
         }
 
-        function atualizarSalaNaTela(id, data, origem) {
-            if (!salasAtivas.has(id)) return;
-
-            if (data.temperatura !== undefined) document.getElementById(`temp_${id}`).innerText = data.temperatura + "°C";
-            if (data.umidade !== undefined) document.getElementById(`umi_${id}`).innerText = data.umidade + "%";
-            if (data.luminosidade !== undefined) document.getElementById(`luz_${id}`).innerText = data.luminosidade + "lx";
-
-            const acStat = data.status_ac || data.comando;
-            if (acStat) {
-                const isOn = (acStat === 'ligado' || acStat === 'ligar');
-                const el = document.getElementById(`stat_${id}`);
-                if (el) {
-                    el.innerText = isOn ? 'LIGADO' : 'DESLIGADO';
-                    el.style.color = isOn ? 'var(--accent)' : 'var(--danger)';
-                }
-
-                state[id].ac = isOn ? 'ligado' : 'desligado';
-                const btnAc = document.getElementById(`btn_ac_${id}`);
-                if (btnAc) {
-                    btnAc.innerText = `❄️ AC: ${isOn ? 'ON' : 'OFF'}`;
-                    btnAc.classList.toggle('active-ac', isOn);
-                }
+        function sendMqtt(topic, payload, label) {
+            if (!mqttClient || !mqttClient.isConnected()) {
+                showToast("MQTT desconectado. Comando não enviado.", true);
+                return false;
             }
 
-            const luzStat = data.status_luz || data.luz;
-            if (luzStat) {
-                const normalizedLuz = luzStat === 'ligar' ? 'ligado' : luzStat === 'desligar' ? 'desligado' : luzStat;
-                const luzOn = normalizedLuz === 'ligado';
-                state[id].luz = normalizedLuz;
+            const message = new Paho.MQTT.Message(JSON.stringify(payload));
+            message.destinationName = topic;
+            mqttClient.send(message);
+            log(topic, payload, "out", label);
+            showToast(label || "Comando enviado.");
+            return true;
+        }
 
-                const elLuz = document.getElementById(`stat_luz_${id}`);
-                if (elLuz) {
-                    elLuz.innerText = luzOn ? 'LIGADO' : 'DESLIGADO';
-                    elLuz.style.color = luzOn ? 'var(--accent)' : 'var(--danger)';
+        function sendRoomCommand(id, payload, label) {
+            const topic = `ac-iot/${id}/comando`;
+            const body = { id_sala: id, ...payload };
+            if (sendMqtt(topic, body, `${label}: ${id.toUpperCase()}`)) {
+                markPending(id, payload);
+                renderRooms();
+            }
+        }
+
+        function sendGlobal(payload, label) {
+            if (sendMqtt("ac-iot/all/comando", payload, label)) {
+                markPending("all", payload);
+                renderRooms();
+            }
+        }
+
+        function applyGlobalSetpoints() {
+            const payload = {
+                setpoint: Number(document.getElementById("globalTemp").value),
+                setpoint_umidade: Number(document.getElementById("globalHum").value),
+                setpoint_luz: Number(document.getElementById("globalLux").value)
+            };
+            sendGlobal(payload, "Aplicar setpoints globais");
+        }
+
+        function sendTestPayload(id) {
+            const temp = Number(document.getElementById("testTemp").value);
+            const hum = Number(document.getElementById("testHum").value);
+            const lux = Number(document.getElementById("testLux").value);
+            const presenca = document.getElementById("testPresence").value === "true";
+            const payload = {
+                temperatura: temp,
+                umidade: hum,
+                luminosidade: lux,
+                presenca
+            };
+            const ac = document.getElementById("testAcCommand");
+            const light = document.getElementById("testLightCommand");
+            const auto = document.getElementById("testAutoMode");
+            if (ac.dataset.dirty === "true") payload.comando = ac.value;
+            if (light.dataset.dirty === "true") payload.luz = light.value;
+            if (auto.dataset.dirty === "true") payload.modo_ac = auto.value;
+            if (id === "all") {
+                sendGlobal(payload, "Aplicar teste em todas");
+                return;
+            }
+            sendRoomCommand(id, payload, "Aplicar teste");
+        }
+
+        function log(topic, payload, type, label) {
+            const logEl = document.getElementById("debugLog");
+            const entry = document.createElement("div");
+            entry.className = "log-entry";
+            const time = new Date().toLocaleTimeString();
+            const direction = type === "in" ? "ENTRADA" : "SAIDA";
+            entry.innerHTML = `<span>${time}</span> <span class="${type}">${direction}</span> <span>${label ? label + " " : ""}${topic}</span> ${JSON.stringify(payload)}`;
+            logEl.prepend(entry);
+            while (logEl.children.length > 80) logEl.lastChild.remove();
+        }
+
+        function clearLog() {
+            document.getElementById("debugLog").innerHTML = "";
+        }
+
+        function showToast(message, error = false) {
+            const toast = document.getElementById("toast");
+            toast.innerText = message;
+            toast.style.borderColor = error ? "rgba(239, 83, 80, 0.55)" : "rgba(36, 196, 107, 0.45)";
+            toast.style.background = error ? "#2a1114" : "#102218";
+            toast.classList.add("show");
+            setTimeout(() => toast.classList.remove("show"), 2400);
+        }
+
+        function handleMessage(message) {
+            const topic = message.destinationName;
+            const raw = message.payloadString;
+            const parts = topic.split("/");
+            const id = parts[1];
+
+            try {
+                const payload = JSON.parse(raw);
+
+                if (topic.includes("/sensores")) {
+                    applyPayloadToRoom(id, payload, "sensores");
+                    log(topic, payload, "in", "Sensores");
+                } else if (topic.includes("/comando")) {
+                    if (id === "all") {
+                        roomOrder.forEach((roomId) => applyPayloadToRoom(roomId, payload, "comando"));
+                    } else {
+                        applyPayloadToRoom(id, payload, "comando");
+                    }
+                    log(topic, payload, "in", "Comando");
                 }
 
-                const btnLuz = document.getElementById(`btn_luz_${id}`);
-                if (btnLuz) {
-                    btnLuz.innerText = `💡 Luz: ${luzOn ? 'ON' : 'OFF'}`;
-                    btnLuz.classList.toggle('active-luz', luzOn);
-                }
-            }
-
-            if (data.setpoint_ac !== undefined || data.setpoint !== undefined) {
-                const setpoint = data.setpoint_ac !== undefined ? data.setpoint_ac : data.setpoint;
-                document.getElementById(`set_${id}`).value = setpoint;
-                document.getElementById(`lbl_set_${id}`).innerText = setpoint;
-            }
-
-            if (data.setpoint_umidade !== undefined) {
-                state[id].setpoint_umidade = data.setpoint_umidade;
-                const setUmi = document.getElementById(`set_umi_${id}`);
-                const lblUmi = document.getElementById(`lbl_set_umi_${id}`);
-                if (setUmi) setUmi.value = data.setpoint_umidade;
-                if (lblUmi) lblUmi.innerText = data.setpoint_umidade;
-            }
-
-            if (data.setpoint_luz !== undefined) {
-                state[id].setpoint_luz = data.setpoint_luz;
-                const setLux = document.getElementById(`set_lux_${id}`);
-                const lblLux = document.getElementById(`lbl_set_lux_${id}`);
-                if (setLux) setLux.value = data.setpoint_luz;
-                if (lblLux) lblLux.innerText = data.setpoint_luz;
-            }
-
-            if (data.presenca !== undefined) {
-                const temPresenca = data.presenca === true || data.presenca === 'true' || data.presenca === 1;
-                const presEl = document.getElementById(`pres_${id}`);
-                if (presEl) {
-                    presEl.innerText = temPresenca ? 'Sim' : 'Não';
-                    presEl.style.color = temPresenca ? 'var(--accent)' : 'var(--text)';
-                }
-                const chk = document.getElementById(`sim_pres_${id}`);
-                if (chk && chk.checked !== temPresenca) {
-                    chk.checked = temPresenca;
-                }
-            }
-
-            if (data.modo_ac !== undefined) {
-                state[id].modo_ac = data.modo_ac;
-                const isAtivo = data.modo_ac === 'ativo';
-
-                const badge = document.getElementById(`badge_${id}`);
-                if (badge) {
-                    badge.innerText = isAtivo ? 'ATIVO' : 'DESATIVADO';
-                    badge.style.background = isAtivo ? 'var(--primary)' : 'var(--danger)';
-                    badge.style.boxShadow = isAtivo ? '0 0 10px var(--primary)' : 'none';
-                }
-                document.getElementById(`card_${id}`).style.borderColor = isAtivo ? 'var(--primary)' : 'var(--border)';
-
-                const btn = document.getElementById(`btn_modo_${id}`);
-                if (btn) {
-                    btn.innerText = `🛡️ MODO DA SALA: ${isAtivo ? 'ATIVO (Auto)' : 'DESATIVADO'}`;
-                    btn.classList.toggle('active-ac', isAtivo);
-                    btn.style.borderColor = isAtivo ? 'var(--primary)' : 'var(--danger)';
-                    btn.style.color = isAtivo ? 'var(--primary)' : 'var(--danger)';
-                }
-            }
-
-            if (origem === 'sensores') {
-                document.getElementById(`time_${id}`).innerText = new Date().toLocaleTimeString();
+                renderRooms();
+            } catch (error) {
+                console.error("Payload MQTT inválido:", error, raw);
             }
         }
 
         function connect() {
+            clearTimeout(reconnectTimer);
             mqttClient = new Paho.MQTT.Client(mqttBroker, mqttPort, clientId);
-                mqttClient.onMessageArrived = (msg) => {
-                    const topic = msg.destinationName;
-                    const payload = msg.payloadString;
-                    
-                    // Descoberta dinâmica: extrai o ID da sala do tópico
-                    const topicParts = topic.split('/');
-                    const id = topicParts[1];
-                    
-                    if (id && !salasAtivas.has(id) && topic.includes('sensores')) {
-                        console.log("Nova sala descoberta:", id);
-                        createSalaCard(id);
-                    }
-
-                    if (topic.includes('comando')) log(topic, payload, 'in');
-
-                    try {
-                        const data = JSON.parse(payload);
-                        if (topic.includes('sensores')) {
-                            console.log(`Dados recebidos para ${id}:`, data);
-                            atualizarSalaNaTela(id, data, 'sensores');
-                        } else if (topic.includes('comando')) {
-                            const ids = id === 'all' ? Array.from(salasAtivas) : [id];
-                            ids.forEach((salaId) => atualizarSalaNaTela(salaId, data, 'comando'));
-                        }
-                    } catch(e) {
-                        console.error("Erro ao processar payload:", e);
-                    }
-                };
-
-            mqttClient.onConnectionLost = (err) => {
-                document.getElementById('statusWrapper').classList.remove('connected');
-                document.getElementById('statusText').innerText = "Conexão perdida. Reconectando...";
-                setTimeout(connect, 3000);
+            mqttClient.onMessageArrived = handleMessage;
+            mqttClient.onConnectionLost = () => {
+                document.getElementById("statusWrapper").classList.remove("is-connected");
+                document.getElementById("statusText").innerText = "MQTT reconectando";
+                reconnectTimer = setTimeout(connect, 3000);
             };
 
             mqttClient.connect({
                 onSuccess: () => {
-                    document.getElementById('statusWrapper').classList.add('connected');
-                    document.getElementById('statusText').innerText = "Conectado ao Broker: " + mqttBroker;
+                    document.getElementById("statusWrapper").classList.add("is-connected");
+                    document.getElementById("statusText").innerText = `MQTT conectado (${mqttBroker}:${mqttPort})`;
                     mqttClient.subscribe("ac-iot/+/sensores");
                     mqttClient.subscribe("ac-iot/+/comando");
                     mqttClient.subscribe("ac-iot/all/comando");
+                    showToast("Painel conectado ao MQTT.");
                 },
-                onFailure: () => setTimeout(connect, 5000)
+                onFailure: () => {
+                    document.getElementById("statusText").innerText = "MQTT falhou";
+                    reconnectTimer = setTimeout(connect, 5000);
+                }
             });
         }
 
-        function enviarComandoIndividual(id, field, value) {
-            if (!mqttClient || !mqttClient.isConnected()) return showToast("Erro: MQTT desconectado", "var(--danger)");
-
-            const payload = { id_sala: id };
-            payload[field] = value;
-
-            const topic = `ac-iot/${id}/comando`;
-            const msg = new Paho.MQTT.Message(JSON.stringify(payload));
-            msg.destinationName = topic;
-            mqttClient.send(msg);
-
-            log(topic, JSON.stringify(payload), 'out');
-            showToast(`Comando enviado para ${id.toUpperCase()}`);
-        }
-
-        function enviarComandoGlobal(field, value) {
-            if (!mqttClient || !mqttClient.isConnected()) return showToast("Erro: MQTT desconectado", "var(--danger)");
-
-            const payload = {};
-            payload[field] = value;
-
-            const topic = `ac-iot/all/comando`;
-            const msg = new Paho.MQTT.Message(JSON.stringify(payload));
-            msg.destinationName = topic;
-            mqttClient.send(msg);
-
-            log(topic, JSON.stringify(payload), 'out');
-            showToast(`Comando GLOBAL enviado: ${field} -> ${value}`);
-        }
-
-        function log(topic, msg, type) {
-            const logEl = document.getElementById('debugLog');
-            const entry = document.createElement('div');
-            const color = type === 'in' ? 'var(--accent)' : 'var(--primary)';
-            entry.innerHTML = `<span style="color:var(--text-dim)">${new Date().toLocaleTimeString()}</span> <b style="color:${color}">${type === 'in' ? '↓' : '↑'}</b> <span style="color:var(--text-dim)">${topic}:</span> ${msg}`;
-            logEl.prepend(entry);
-            if (logEl.children.length > 30) logEl.lastChild.remove();
-        }
-
-        function enviarComandoIndividualExt(id, payloadObj) {
-            if (!mqttClient || !mqttClient.isConnected()) return showToast("Erro: MQTT desconectado", "var(--danger)");
-            const topic = `ac-iot/${id}/comando`;
-            const msg = new Paho.MQTT.Message(JSON.stringify(payloadObj));
-            msg.destinationName = topic;
-            mqttClient.send(msg);
-            log(topic, JSON.stringify(payloadObj), 'out');
-            showToast(`Comando avançado enviado para ${id.toUpperCase()}`);
-        }
-
-        function enviarComandoGlobalExt(payloadObj) {
-            if (!mqttClient || !mqttClient.isConnected()) return showToast("Erro: MQTT desconectado", "var(--danger)");
-            const topic = `ac-iot/all/comando`;
-            const msg = new Paho.MQTT.Message(JSON.stringify(payloadObj));
-            msg.destinationName = topic;
-            mqttClient.send(msg);
-            log(topic, JSON.stringify(payloadObj), 'out');
-            showToast(`Comando GLOBAL avançado enviado!`);
-        }
-        
-        function showToast(msg, color) {
-            const t = document.getElementById('toast');
-            t.innerText = msg;
-            t.style.background = color || 'var(--accent)';
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3000);
-        }
-
-        function enviarComandoSimulador(field, value) {
-            const target = document.getElementById('sim_target').value;
-            if (target === 'all') {
-                enviarComandoGlobal(field, value);
-            } else {
-                enviarComandoIndividual(target, field, value);
-            }
-        }
-
-        window.onload = () => { connect(); };
+        window.addEventListener("load", () => {
+            renderRooms();
+            connect();
+        });
     </script>
 </body>
 </html>

@@ -243,4 +243,4 @@ Este projeto está licenciado sob a licença MIT — veja o arquivo [LICENSE](LI
 
 ## 👥 Autores
 
-Projeto desenvolvido como trabalho acadêmico na **Universidade Federal do Maranhão (UFMA)**.
+Projeto desenvolvido como trabalho acadêmico na **UFMA**.
