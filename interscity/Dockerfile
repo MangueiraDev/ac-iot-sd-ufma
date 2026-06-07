@@ -3,7 +3,7 @@ FROM debian:bookworm-slim
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         g++ \
-        libboost-system-dev \
+        libcurl4-openssl-dev \
         libmosquitto-dev \
         nlohmann-json3-dev \
         ca-certificates \
@@ -12,6 +12,6 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY main.cpp .
-RUN g++ -std=c++17 main.cpp -o interscity -lboost_system -lmosquitto -pthread
+RUN g++ -std=c++17 main.cpp -o interscity -lcurl -lmosquitto -pthread
 
 CMD ["./interscity"]

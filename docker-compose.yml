@@ -237,7 +237,8 @@ services:
     container_name: interscity-actuator-controller
     image: dylanguedes/actuator-controller:stable
     ports:
-      - "5000:3000"
+      # Port 5000 is commonly reserved by macOS Control Center.
+      - "5001:3000"
     command: bash -c "rake db:setup && bundle exec rails s -p 3000 -b 0.0.0.0"
     environment:
       MONGO_USER: admin
@@ -294,18 +295,11 @@ services:
       - MQTT_BROKER=mosquitto
       - MQTT_PORT=1883
       - MQTT_TOPIC=ac-iot/+/sensores
-      - INTERSCITY_CATALOGUER_URL=http://interscity-resource-cataloguer:3000
-      - INTERSCITY_ADAPTOR_URL=http://interscity-resource-adaptor:3000
-      - INTERSCITY_COLLECTOR_URL=http://interscity-data-collector:3000
+      - INTERSCITY_BASE_URL=https://cidadesinteligentes.lsdi.ufma.br/interscity_lh
+      - INTERSCITY_SSL_VERIFY=false
     depends_on:
       mosquitto:
         condition: service_healthy
-      interscity-resource-cataloguer:
-        condition: service_started
-      interscity-resource-adaptor:
-        condition: service_started
-      interscity-data-collector:
-        condition: service_started
     restart: unless-stopped
 
 volumes:

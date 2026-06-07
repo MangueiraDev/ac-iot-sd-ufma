@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AC-IoT Controle Operacional</title>
+    <title>AC-IoT Salas de aula UFMA</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
     <style>
         :root {
@@ -20,7 +20,7 @@
             --danger: #ef5350;
             --warn: #f2a93b;
             --shadow: 0 20px 70px rgba(0, 0, 0, 0.32);
-            --rooms-width: 690px;
+            --rooms-width: 100%;
         }
 
         * {
@@ -51,9 +51,14 @@
         }
 
         .app {
-            width: min(1500px, 100%);
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            width: 100%;
+            height: 100vh;
+            min-height: 0;
             margin: 0 auto;
             padding: 14px 18px;
+            overflow: hidden;
         }
 
         .header {
@@ -122,8 +127,8 @@
 
         .global-bar {
             display: grid;
-            grid-template-columns: minmax(0, max-content) auto;
-            width: fit-content;
+            grid-template-columns: minmax(0, 1fr) auto;
+            width: 100%;
             max-width: 100%;
             gap: 8px;
             align-items: center;
@@ -131,14 +136,12 @@
             border-radius: 10px;
             background: var(--panel);
             padding: 7px 10px;
-            margin-bottom: 12px;
         }
 
         .setpoint-grid {
             display: grid;
-            grid-template-columns: repeat(3, 205px);
+            grid-template-columns: repeat(3, minmax(150px, 1fr));
             gap: 8px;
-            max-width: max-content;
         }
 
         .field {
@@ -163,10 +166,6 @@
         input[type="range"] {
             width: 100%;
             accent-color: var(--primary);
-        }
-
-        .global-bar input[type="range"] {
-            max-width: 205px;
         }
 
         select {
@@ -219,21 +218,153 @@
             font-size: 0.76rem;
         }
 
-        .layout {
+        .comm-layout {
             display: grid;
-            grid-template-columns: var(--rooms-width) minmax(380px, 440px);
-            width: fit-content;
-            max-width: 100%;
-            gap: 14px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
             align-items: start;
         }
 
+        .comm-column {
+            display: grid;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .comm-wide {
+            grid-column: 1 / -1;
+        }
+
+        .comm-title {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.72rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .comm-item,
+        .comm-link {
+            min-width: 0;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #101822;
+            padding: 8px 10px;
+        }
+
+        .comm-link {
+            display: grid;
+            gap: 2px;
+            width: 100%;
+            color: var(--text);
+            text-align: left;
+        }
+
+        .comm-link:hover {
+            border-color: var(--line-strong);
+            background: #121c28;
+        }
+
+        .comm-item span,
+        .comm-link span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.68rem;
+        }
+
+        .comm-item b,
+        .comm-link b {
+            display: block;
+            margin-top: 3px;
+            overflow: hidden;
+            color: var(--text);
+            font-size: 0.78rem;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .comm-wide b {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.76rem;
+            overflow-wrap: anywhere;
+            text-overflow: clip;
+            white-space: normal;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(520px, 1.2fr) minmax(360px, 0.72fr) minmax(340px, 0.72fr);
+            width: 100%;
+            max-width: 100%;
+            gap: 14px;
+            align-items: stretch;
+            height: 100%;
+            min-height: 0;
+        }
+
+        .rooms-stack {
+            display: grid;
+            grid-template-rows: auto auto minmax(0, 1fr);
+            gap: 14px;
+            min-width: 0;
+            min-height: 0;
+            height: 100%;
+        }
+
+        .detail-column {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            min-width: 0;
+            height: 100%;
+        }
+
         .events-panel {
-            width: min(100%, calc(var(--rooms-width) + 14px + 440px));
-            margin-top: 14px;
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            min-height: 0;
+            height: 100%;
+            max-height: 100%;
+        }
+
+        .interscity-panel,
+        .interscity-column {
+            width: 100%;
+        }
+
+        .interscity-column {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            min-width: 0;
+            height: 100%;
+        }
+
+        .detail-column .panel-body,
+        .events-panel .panel-body,
+        .interscity-column .panel-body {
+            min-height: 0;
+        }
+
+        .events-panel .log {
+            height: 100%;
+            min-height: 0;
+            max-height: 100%;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .events-panel .panel-body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .detail-column .panel-body,
+        .interscity-column .panel-body {
+            overflow-y: auto;
         }
 
         .panel {
+            min-height: 0;
             border: 1px solid var(--line);
             border-radius: 10px;
             background: var(--panel);
@@ -289,7 +420,7 @@
 
         .room-row {
             display: grid;
-            grid-template-columns: 130px repeat(3, 82px) 140px;
+            grid-template-columns: minmax(130px, 1.25fr) repeat(3, minmax(82px, 0.85fr)) minmax(140px, 1fr);
             gap: 8px;
             align-items: center;
             width: 100%;
@@ -358,11 +489,6 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-        }
-
-        .sidebar {
-            position: sticky;
-            top: 12px;
         }
 
         .mode-badge {
@@ -471,6 +597,7 @@
 
         .log {
             height: 130px;
+            min-height: 0;
             overflow: auto;
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             font-size: 0.72rem;
@@ -521,16 +648,30 @@
             transform: translateY(0);
         }
 
-        @media (max-width: 1100px) {
+        @media (max-width: 1320px) {
+            .app {
+                display: block;
+                height: auto;
+                min-height: auto;
+                overflow: visible;
+            }
+
             .layout,
             .header,
             .global-bar {
                 grid-template-columns: 1fr;
                 width: auto;
+                min-height: auto;
             }
 
-            .events-panel {
-                width: auto;
+            .rooms-stack {
+                order: 1;
+                grid-template-rows: none;
+                height: auto;
+            }
+
+            .interscity-column {
+                order: 3;
             }
 
             .setpoint-grid {
@@ -538,17 +679,28 @@
                 max-width: none;
             }
 
-            .global-bar input[type="range"] {
-                max-width: none;
+            .detail-column {
+                order: 2;
+                height: auto;
+            }
+
+            .interscity-panel,
+            .interscity-column {
+                width: 100%;
+            }
+
+            .interscity-column {
+                height: auto;
+            }
+
+            .events-panel {
+                height: 420px;
             }
 
             .statusbar {
                 justify-content: flex-start;
             }
 
-            .sidebar {
-                position: static;
-            }
         }
 
         @media (max-width: 760px) {
@@ -558,7 +710,8 @@
 
             .setpoint-grid,
             .room-row,
-            .test-grid {
+            .test-grid,
+            .comm-layout {
                 grid-template-columns: 1fr;
             }
 
@@ -572,60 +725,72 @@
     <main class="app">
         <header class="header">
             <div class="title">
-                <h1>AC-IoT Controle Operacional</h1>
+                <h1>AC-IoT Salas de aula UFMA</h1>
                 <p>Monitoramento das salas, atuação direta, automação e testes controlados.</p>
             </div>
             <div id="statusWrapper" class="statusbar">
                 <span class="chip"><span class="lamp mqtt-lamp"></span><span id="statusText">MQTT conectando</span></span>
-                <a class="chip link" href="http://localhost:3000/resources" target="_blank" rel="noreferrer">InterSCity</a>
-                <a class="chip link" href="http://localhost:4000/resources/00000000-0000-4000-8000-000000000101/data/last" target="_blank" rel="noreferrer">Data Collector</a>
+                <span class="chip"><span id="interscityLamp" class="lamp off"></span><span id="interscityStatus">InterSCity verificando</span></span>
                 <span class="chip">Salas <b id="roomCount">0</b></span>
                 <span class="chip">Atualizado <b id="lastUpdate">--</b></span>
             </div>
         </header>
 
-        <section class="global-bar">
-            <div>
-                <div class="setpoint-grid">
-                    <div class="field">
-                        <label for="globalTemp">Setpoint AC <b id="lblGlobalTemp">22°C</b></label>
-                        <input id="globalTemp" type="range" min="16" max="30" step="1" value="22" oninput="setText('lblGlobalTemp', this.value + '°C')">
-                    </div>
-                    <div class="field">
-                        <label for="globalHum">Setpoint umidade <b id="lblGlobalHum">55%</b></label>
-                        <input id="globalHum" type="range" min="30" max="80" step="1" value="55" oninput="setText('lblGlobalHum', this.value + '%')">
-                    </div>
-                    <div class="field">
-                        <label for="globalLux">Setpoint iluminação <b id="lblGlobalLux">300 lx</b></label>
-                        <input id="globalLux" type="range" min="50" max="1000" step="10" value="300" oninput="setText('lblGlobalLux', this.value + ' lx')">
-                    </div>
-                </div>
-            </div>
-            <button class="btn primary apply" type="button" title="Aplicar estes setpoints em todas as salas" onclick="applyGlobalSetpoints()">Aplicar</button>
-        </section>
-
         <section class="layout">
-            <div class="panel">
-                <div class="panel-head">
-                    <div class="rooms-title">
+            <div class="rooms-stack">
+                <section class="global-bar">
+                    <div class="setpoint-grid">
+                        <div class="field">
+                            <label for="globalTemp">Setpoint AC <b id="lblGlobalTemp">22°C</b></label>
+                            <input id="globalTemp" type="range" min="16" max="30" step="1" value="22" oninput="setText('lblGlobalTemp', this.value + '°C')">
+                        </div>
+                        <div class="field">
+                            <label for="globalHum">Setpoint umidade <b id="lblGlobalHum">55%</b></label>
+                            <input id="globalHum" type="range" min="30" max="80" step="1" value="55" oninput="setText('lblGlobalHum', this.value + '%')">
+                        </div>
+                        <div class="field">
+                            <label for="globalLux">Setpoint iluminação <b id="lblGlobalLux">300 lx</b></label>
+                            <input id="globalLux" type="range" min="50" max="1000" step="10" value="300" oninput="setText('lblGlobalLux', this.value + ' lx')">
+                        </div>
+                    </div>
+                    <button class="btn primary apply" type="button" title="Aplicar estes setpoints em todas as salas" onclick="applyGlobalSetpoints()">Aplicar</button>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-head">
+                        <div class="rooms-title">
+                            <div>
+                                <h2>Salas</h2>
+                                <p>Auto: Node-RED controla AC/luz por presença, ambiente e setpoints.</p>
+                            </div>
+                            <div class="room-actions">
+                                <button class="btn small ok" type="button" title="Permite que a automação atue nas salas" onclick="sendGlobal({modo_ac:'ativo'}, 'Ativar automação global')">Auto ON</button>
+                                <button class="btn small danger" type="button" title="Bloqueia a automação e desliga o AC" onclick="sendGlobal({modo_ac:'desativado', comando:'desligar'}, 'Desativar automação global')">Auto OFF</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div id="roomsContainer" class="room-table">
+                            <div class="empty">Aguardando dados MQTT das salas.</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel events-panel">
+                    <div class="panel-head">
                         <div>
-                            <h2>Salas</h2>
-                            <p>Auto: Node-RED controla AC/luz por presença, ambiente e setpoints.</p>
+                            <h2>Eventos MQTT</h2>
+                            <p>Leituras, comandos e confirmações.</p>
                         </div>
-                        <div class="room-actions">
-                            <button class="btn small ok" type="button" title="Permite que a automação atue nas salas" onclick="sendGlobal({modo_ac:'ativo'}, 'Ativar automação global')">Auto ON</button>
-                            <button class="btn small danger" type="button" title="Bloqueia a automação e desliga o AC" onclick="sendGlobal({modo_ac:'desativado', comando:'desligar'}, 'Desativar automação global')">Auto OFF</button>
-                        </div>
+                        <button class="btn small" type="button" onclick="clearLog()">Limpar</button>
                     </div>
-                </div>
-                <div class="panel-body">
-                    <div id="roomsContainer" class="room-table">
-                        <div class="empty">Aguardando dados MQTT das salas.</div>
+                    <div class="panel-body">
+                        <div id="debugLog" class="log"></div>
                     </div>
-                </div>
+                </section>
             </div>
 
-            <aside class="panel sidebar">
+            <aside class="panel detail-column">
                 <div class="panel-head">
                     <div>
                         <h2 id="detailTitle">Ambiente de testes</h2>
@@ -637,19 +802,19 @@
                     <div class="empty">Nenhuma sala selecionada.</div>
                 </div>
             </aside>
-        </section>
 
-        <section class="panel events-panel">
-            <div class="panel-head">
-                <div>
-                    <h2>Eventos MQTT</h2>
-                    <p>Registro compacto de leituras, comandos e confirmações.</p>
+            <aside class="panel interscity-column">
+                <div class="panel-head">
+                    <div>
+                        <h2>Comunicação InterSCity</h2>
+                        <p>Bridge envia leituras para a rede InterSCity UFMA via serviços REST.</p>
+                    </div>
+                    <button class="btn small" type="button" onclick="pollInterSCity(true)">Verificar</button>
                 </div>
-                <button class="btn small" type="button" onclick="clearLog()">Limpar</button>
-            </div>
-            <div class="panel-body">
-                <div id="debugLog" class="log"></div>
-            </div>
+                <div class="panel-body">
+                    <div id="interscityPanel" class="comm-layout"></div>
+                </div>
+            </aside>
         </section>
     </main>
 
@@ -658,13 +823,33 @@
     <script>
         const mqttBroker = window.location.hostname || "localhost";
         const mqttPort = 9001;
+        const interscityBaseUrl = "https://cidadesinteligentes.lsdi.ufma.br/interscity_lh";
+        const interscityCataloguerUrl = `${interscityBaseUrl}/catalog`;
+        const interscityCollectorUrl = `${interscityBaseUrl}/collector`;
+        const interscityRoomUuids = {
+            sala01: "00000000-0000-4000-8000-000000000101",
+            sala02: "00000000-0000-4000-8000-000000000102",
+            sala03: "00000000-0000-4000-8000-000000000103"
+        };
         const clientId = "web_panel_" + Math.random().toString(16).slice(2, 10);
         const rooms = {};
         const roomOrder = [];
+        const initialRooms = ["sala01", "sala02", "sala03"];
         let selectedRoom = null;
         let testDraft = null;
         let mqttClient = null;
         let reconnectTimer = null;
+        let interscityTimer = null;
+        const interscityState = {
+            online: false,
+            cataloguer: "--",
+            collector: "--",
+            room: "--",
+            uuid: interscityRoomUuids.sala01,
+            lastSync: "--",
+            lastCapability: "--",
+            detail: "Aguardando verificacao"
+        };
 
         const defaultRoom = () => ({
             temperatura: null,
@@ -723,9 +908,142 @@
             return rooms[id];
         }
 
+        function seedInitialRooms() {
+            initialRooms.forEach((id) => getRoom(id));
+        }
+
+        function roomUuid(id) {
+            return interscityRoomUuids[id] || null;
+        }
+
+        function extractCapabilities(data) {
+            const resource = data?.resources?.[0];
+            const capabilities = resource?.capabilities || {};
+            return Object.keys(capabilities).filter((name) => capabilities[name]?.length > 0);
+        }
+
+        function setInterSCityStatus(online, text) {
+            interscityState.online = online;
+            const lampEl = document.getElementById("interscityLamp");
+            const statusEl = document.getElementById("interscityStatus");
+            if (lampEl) {
+                lampEl.classList.toggle("on", online);
+                lampEl.classList.toggle("off", !online);
+            }
+            if (statusEl) statusEl.innerText = text;
+        }
+
+        function setMqttStatus(text, connected = false) {
+            const wrapper = document.getElementById("statusWrapper");
+            const status = document.getElementById("statusText");
+            if (wrapper) wrapper.classList.toggle("is-connected", connected);
+            if (status) status.innerText = text;
+        }
+
+        function openExternal(url) {
+            window.open(url, "_blank", "noopener,noreferrer");
+        }
+
+        function renderInterSCityPanel() {
+            const panel = document.getElementById("interscityPanel");
+            if (!panel) return;
+            const catalogUrl = `${interscityCataloguerUrl}/resources`;
+            const collectorUrl = `${interscityCollectorUrl}/resources/${interscityState.uuid}/data/last`;
+            panel.innerHTML = `
+                <div class="comm-column">
+                    <h3 class="comm-title">Monitoramento</h3>
+                    <div class="comm-item">
+                        <span>Fluxo InterSCity</span>
+                        <b title="Bridge local -> Resource Cataloguer -> Resource Adaptor -> Data Collector">Bridge REST -> Cataloguer/Adaptor -> Collector</b>
+                    </div>
+                    <div class="comm-item">
+                        <span>Resource Cataloguer</span>
+                        <b title="${catalogUrl}">${interscityState.cataloguer}</b>
+                    </div>
+                    <div class="comm-item">
+                        <span>Data Collector</span>
+                        <b title="${collectorUrl}">${interscityState.collector}</b>
+                    </div>
+                    <div class="comm-item">
+                        <span>Ultima sincronizacao</span>
+                        <b>${interscityState.lastSync}</b>
+                    </div>
+                </div>
+                <div class="comm-column">
+                    <h3 class="comm-title">Consulta</h3>
+                    <div class="comm-item">
+                        <span>Sala monitorada</span>
+                        <b title="${interscityState.uuid || "UUID nao mapeado"}">${interscityState.room}</b>
+                    </div>
+                    <button class="comm-link" type="button" onclick="openExternal('${catalogUrl}')">
+                        <span>Catalogo InterSCity UFMA</span>
+                        <b>Resources cadastrados</b>
+                    </button>
+                    <button class="comm-link" type="button" onclick="openExternal('${collectorUrl}')">
+                        <span>Data Collector</span>
+                        <b>Ultima leitura da sala</b>
+                    </button>
+                    <div class="comm-item">
+                        <span>Capabilities recebidas</span>
+                        <b title="${interscityState.lastCapability}">${interscityState.lastCapability}</b>
+                    </div>
+                </div>
+                <div class="comm-item comm-wide">
+                    <span>UUID InterSCity</span>
+                    <b title="${interscityState.uuid || "UUID nao mapeado"}">${interscityState.uuid || "--"}</b>
+                </div>
+            `;
+        }
+
+        async function pollInterSCity(manual = false) {
+            const roomId = selectedRoom && roomUuid(selectedRoom) ? selectedRoom : "sala01";
+            const uuid = roomUuid(roomId);
+            if (!uuid) {
+                interscityState.room = selectedRoom ? selectedRoom.toUpperCase() : "--";
+                interscityState.uuid = "";
+                interscityState.detail = "Sala sem UUID InterSCity UFMA";
+                setInterSCityStatus(false, "InterSCity sem UUID");
+                renderInterSCityPanel();
+                return;
+            }
+
+            interscityState.room = roomId.toUpperCase();
+            interscityState.uuid = uuid;
+            if (manual) setInterSCityStatus(false, "InterSCity verificando");
+
+            try {
+                const catalogResponse = await fetch(`${interscityCataloguerUrl}/resources`);
+                interscityState.cataloguer = catalogResponse.ok ? "online" : `HTTP ${catalogResponse.status}`;
+
+                const collectorResponse = await fetch(`${interscityCollectorUrl}/resources/${uuid}/data/last`);
+                interscityState.collector = collectorResponse.ok ? "online" : `HTTP ${collectorResponse.status}`;
+
+                let capabilities = [];
+                if (collectorResponse.ok) {
+                    const data = await collectorResponse.json();
+                    capabilities = extractCapabilities(data);
+                }
+
+                interscityState.lastSync = new Date().toLocaleTimeString();
+                interscityState.lastCapability = capabilities.length > 0 ? capabilities.join(", ") : "sem leitura recente";
+                interscityState.detail = collectorResponse.ok ? "Data Collector consultado" : "Data Collector indisponivel";
+                setInterSCityStatus(catalogResponse.ok && collectorResponse.ok, collectorResponse.ok ? "InterSCity sincronizado" : "InterSCity parcial");
+            } catch (error) {
+                interscityState.cataloguer = "indisponivel";
+                interscityState.collector = "indisponivel";
+                interscityState.lastSync = new Date().toLocaleTimeString();
+                interscityState.lastCapability = "sem resposta REST";
+                interscityState.detail = error.message || "Falha na consulta";
+                setInterSCityStatus(false, "InterSCity indisponivel");
+            }
+
+            renderInterSCityPanel();
+        }
+
         function renderRooms() {
             const container = document.getElementById("roomsContainer");
             document.getElementById("roomCount").innerText = roomOrder.length;
+            renderInterSCityPanel();
 
             if (roomOrder.length === 0) {
                 container.innerHTML = '<div class="empty">Aguardando dados MQTT das salas.</div>';
@@ -879,6 +1197,7 @@
             if (selectedRoom !== id) testDraft = null;
             selectedRoom = id;
             renderRooms();
+            pollInterSCity();
         }
 
         function getTestDraft(room) {
@@ -1069,29 +1388,30 @@
             mqttClient = new Paho.MQTT.Client(mqttBroker, mqttPort, clientId);
             mqttClient.onMessageArrived = handleMessage;
             mqttClient.onConnectionLost = () => {
-                document.getElementById("statusWrapper").classList.remove("is-connected");
-                document.getElementById("statusText").innerText = "MQTT reconectando";
+                setMqttStatus("MQTT reconectando", false);
                 reconnectTimer = setTimeout(connect, 3000);
             };
 
             mqttClient.connect({
                 onSuccess: () => {
-                    document.getElementById("statusWrapper").classList.add("is-connected");
-                    document.getElementById("statusText").innerText = `MQTT conectado (${mqttBroker}:${mqttPort})`;
+                    setMqttStatus(`MQTT conectado (${mqttBroker}:${mqttPort})`, true);
                     mqttClient.subscribe("ac-iot/+/sensores");
                     mqttClient.subscribe("ac-iot/+/comando");
                     mqttClient.subscribe("ac-iot/all/comando");
                     showToast("Painel conectado ao MQTT.");
                 },
                 onFailure: () => {
-                    document.getElementById("statusText").innerText = "MQTT falhou";
+                    setMqttStatus("MQTT falhou", false);
                     reconnectTimer = setTimeout(connect, 5000);
                 }
             });
         }
 
         window.addEventListener("load", () => {
+            seedInitialRooms();
             renderRooms();
+            pollInterSCity();
+            interscityTimer = setInterval(pollInterSCity, 5000);
             connect();
         });
     </script>
