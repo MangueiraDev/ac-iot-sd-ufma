@@ -1,11 +1,9 @@
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/version.hpp>
+#include <curl/curl.h>
 #include <mosquitto.h>
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
@@ -19,13 +17,16 @@
 #include <thread>
 #include <vector>
 
-namespace beast = boost::beast;
-namespace http = beast::http;
-namespace net = boost::asio;
-using tcp = net::ip::tcp;
 using json = nlohmann::json;
 
+enum class HttpMethod {
+    Get,
+    Post,
+    Put
+};
+
 struct HttpUrl {
+    std::string scheme;
     std::string host;
     std::string port;
     std::string base_path;
@@ -54,6 +55,7 @@ static HttpUrl cataloguer_url;
 static HttpUrl adaptor_url;
 static HttpUrl collector_url;
 static std::string mqtt_topic;
+static bool intercity_ssl_verify = false;
 
 static const std::vector<CapabilityConfig> capabilities = {
     {"temperatura", "Temperatura da sala"},
@@ -62,6 +64,8 @@ static const std::vector<CapabilityConfig> capabilities = {
     {"presenca", "Presenca detectada na sala"},
     {"status_ac", "Estado do ar-condicionado"},
     {"setpoint_ac", "Setpoint do ar-condicionado"},
+    {"setpoint_umidade", "Setpoint de umidade da sala"},
+    {"setpoint_luz", "Setpoint de luminosidade da sala"},
     {"status_luz", "Estado da iluminacao"},
     {"modo_ac", "Modo de automacao do ar-condicionado"}
 };
@@ -117,8 +121,20 @@ static std::string get_env(const char* name, const char* def = "") {
     return (it != dot_env.end()) ? it->second : std::string(def);
 }
 
+static bool env_flag_enabled(const std::string& value) {
+    std::string normalized = value;
+    std::transform(normalized.begin(), normalized.end(), normalized.begin(), [](unsigned char ch) {
+        return static_cast<char>(std::tolower(ch));
+    });
+    return normalized == "1" || normalized == "true" || normalized == "yes" || normalized == "sim";
+}
+
 static bool parse_http_url(const std::string& url, HttpUrl& out) {
-    if (url.rfind("http://", 0) != 0) {
+    if (url.rfind("http://", 0) == 0) {
+        out.scheme = "http";
+    } else if (url.rfind("https://", 0) == 0) {
+        out.scheme = "https";
+    } else {
         return false;
     }
 
@@ -136,7 +152,7 @@ static bool parse_http_url(const std::string& url, HttpUrl& out) {
     auto port_pos = host_port.find(':');
     if (port_pos == std::string::npos) {
         out.host = host_port;
-        out.port = "80";
+        out.port = out.scheme == "https" ? "443" : "80";
     } else {
         out.host = host_port.substr(0, port_pos);
         out.port = host_port.substr(port_pos + 1);
@@ -161,49 +177,100 @@ static std::string join_path(const std::string& a, const std::string& b) {
     return a + b;
 }
 
+static std::string full_url(const HttpUrl& url, const std::string& path) {
+    std::string host_port = url.host;
+    const bool default_http = url.scheme == "http" && url.port == "80";
+    const bool default_https = url.scheme == "https" && url.port == "443";
+    if (!default_http && !default_https) {
+        host_port += ":" + url.port;
+    }
+    return url.scheme + "://" + host_port + join_path(url.base_path, path);
+}
+
+static std::size_t write_response_body(char* ptr, std::size_t size, std::size_t nmemb, void* userdata) {
+    auto* body = static_cast<std::string*>(userdata);
+    const std::size_t total = size * nmemb;
+    body->append(ptr, total);
+    return total;
+}
+
 static HttpResponse send_http(const HttpUrl& url,
-                              http::verb method,
+                              HttpMethod method,
                               const std::string& path,
                               const json* payload = nullptr) {
     HttpResponse result;
 
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        result.body = "curl_easy_init falhou";
+        return result;
+    }
+
+    struct curl_slist* headers = nullptr;
     try {
-        net::io_context ioc;
-        tcp::resolver resolver{ioc};
-        beast::tcp_stream stream{ioc};
-        stream.expires_after(std::chrono::seconds(10));
+        const std::string target = full_url(url, path);
+        std::string response_body;
+        std::string request_body;
 
-        auto const resolved = resolver.resolve(url.host, url.port);
-        stream.connect(resolved);
+        headers = curl_slist_append(headers, "Accept: application/json");
+        headers = curl_slist_append(headers, "Content-Type: application/json");
 
-        http::request<http::string_body> req{method, join_path(url.base_path, path), 11};
-        req.set(http::field::host, url.host + ":" + url.port);
-        req.set(http::field::user_agent, "ac-iot-interscity-bridge/" BOOST_BEAST_VERSION_STRING);
-        req.set(http::field::accept, "application/json");
+        curl_easy_setopt(curl, CURLOPT_URL, target.c_str());
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, "ac-iot-interscity-bridge/1.0");
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_response_body);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 20L);
 
-        if (payload != nullptr) {
-            req.set(http::field::content_type, "application/json");
-            req.body() = payload->dump();
-            req.prepare_payload();
+        if (url.scheme == "https" && !intercity_ssl_verify) {
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
         }
 
-        http::write(stream, req);
+        if (method == HttpMethod::Post || method == HttpMethod::Put) {
+            request_body = payload ? payload->dump() : "{}";
+            if (method == HttpMethod::Post) {
+                curl_easy_setopt(curl, CURLOPT_POST, 1L);
+            } else {
+                curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+            }
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request_body.c_str());
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, static_cast<long>(request_body.size()));
+        } else if (method == HttpMethod::Get) {
+            curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
+        } else {
+            result.body = "Metodo HTTP nao suportado";
+            curl_slist_free_all(headers);
+            curl_easy_cleanup(curl);
+            return result;
+        }
 
-        beast::flat_buffer buffer;
-        http::response<http::string_body> res;
-        http::read(stream, buffer, res);
-
-        result.status = res.result_int();
-        result.body = res.body();
-
-        beast::error_code ec;
-        stream.socket().shutdown(tcp::socket::shutdown_both, ec);
+        CURLcode code = curl_easy_perform(curl);
+        if (code != CURLE_OK) {
+            result.status = 0;
+            result.body = curl_easy_strerror(code);
+        } else {
+            long status = 0;
+            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status);
+            result.status = static_cast<int>(status);
+            result.body = response_body;
+        }
     } catch (const std::exception& exc) {
         result.status = 0;
         result.body = exc.what();
     }
 
+    if (headers) {
+        curl_slist_free_all(headers);
+    }
+    curl_easy_cleanup(curl);
+
     return result;
+}
+
+static std::string intercity_url_label(const HttpUrl& url) {
+    return full_url(url, "/");
 }
 
 static bool is_success(int status) {
@@ -253,7 +320,7 @@ static std::string room_from_topic(const std::string& topic) {
 
 static void wait_for_cataloguer() {
     for (int attempt = 1; attempt <= 120; ++attempt) {
-        auto response = send_http(cataloguer_url, http::verb::get, "/capabilities");
+        auto response = send_http(cataloguer_url, HttpMethod::Get, "/capabilities");
         if (response.status == 200) {
             std::cout << "Cataloguer disponivel em " << cataloguer_url.host << ":" << cataloguer_url.port << "\n";
             return;
@@ -270,8 +337,12 @@ static void wait_for_cataloguer() {
 
 static void wait_for_data_collector() {
     for (int attempt = 1; attempt <= 120; ++attempt) {
-        auto response = send_http(collector_url, http::verb::get, "/resources/data");
-        if (response.status == 200) {
+        const auto first_room = rooms.begin();
+        const std::string path = first_room == rooms.end()
+            ? "/resources/data"
+            : "/resources/" + first_room->second.uuid + "/data/last";
+        auto response = send_http(collector_url, HttpMethod::Get, path);
+        if (response.status > 0 && response.status < 500) {
             std::cout << "Data Collector disponivel em " << collector_url.host << ":" << collector_url.port << "\n";
             return;
         }
@@ -287,7 +358,7 @@ static void wait_for_data_collector() {
 
 static bool ensure_capability(const CapabilityConfig& capability) {
     for (int attempt = 1; attempt <= 30; ++attempt) {
-        auto get_response = send_http(cataloguer_url, http::verb::get, "/capabilities/" + capability.name);
+        auto get_response = send_http(cataloguer_url, HttpMethod::Get, "/capabilities/" + capability.name);
         if (get_response.status == 200) {
             std::cout << "Capability ja cadastrada: " << capability.name << "\n";
             return true;
@@ -306,7 +377,7 @@ static bool ensure_capability(const CapabilityConfig& capability) {
             {"description", capability.description},
             {"capability_type", "sensor"}
         };
-        auto post_response = send_http(cataloguer_url, http::verb::post, "/capabilities", &payload);
+        auto post_response = send_http(cataloguer_url, HttpMethod::Post, "/capabilities", &payload);
         if (is_success(post_response.status)) {
             std::cout << "Capability cadastrada: " << capability.name << "\n";
             return true;
@@ -349,9 +420,9 @@ static bool ensure_room(const RoomConfig& room) {
     const auto resource_path = "/resources/" + room.uuid;
 
     for (int attempt = 1; attempt <= 30; ++attempt) {
-        auto get_response = send_http(cataloguer_url, http::verb::get, resource_path);
+        auto get_response = send_http(cataloguer_url, HttpMethod::Get, resource_path);
         if (get_response.status == 200) {
-            auto put_response = send_http(cataloguer_url, http::verb::put, resource_path, &payload);
+            auto put_response = send_http(cataloguer_url, HttpMethod::Put, resource_path, &payload);
             if (is_success(put_response.status)) {
                 std::cout << "Recurso atualizado: " << room.id << " (" << room.uuid << ")\n";
                 return true;
@@ -361,14 +432,14 @@ static bool ensure_room(const RoomConfig& room) {
                       << ": status=" << put_response.status
                       << " body=" << put_response.body << "\n";
         } else if (get_response.status == 404) {
-            auto post_response = send_http(cataloguer_url, http::verb::post, "/resources", &payload);
+            auto post_response = send_http(cataloguer_url, HttpMethod::Post, "/resources", &payload);
             if (is_success(post_response.status)) {
                 std::cout << "Recurso cadastrado: " << room.id << " (" << room.uuid << ")\n";
                 return true;
             }
 
             if (post_response.status == 422) {
-                auto put_response = send_http(cataloguer_url, http::verb::put, resource_path, &payload);
+                auto put_response = send_http(cataloguer_url, HttpMethod::Put, resource_path, &payload);
                 if (is_success(put_response.status)) {
                     std::cout << "Recurso recuperado via update: " << room.id << "\n";
                     return true;
@@ -411,7 +482,7 @@ static void add_capability_value(json& data, const std::string& capability, cons
     data["data"][capability] = json::array({
         {
             {"value", value},
-            {"date", date}
+            {"timestamp", date}
         }
     });
 }
@@ -427,6 +498,8 @@ static bool post_room_telemetry(const RoomConfig& room, const json& payload) {
         "presenca",
         "status_ac",
         "setpoint_ac",
+        "setpoint_umidade",
+        "setpoint_luz",
         "status_luz",
         "modo_ac"
     };
@@ -444,7 +517,7 @@ static bool post_room_telemetry(const RoomConfig& room, const json& payload) {
 
     const auto path = "/resources/" + room.uuid + "/data";
     for (int attempt = 1; attempt <= 3; ++attempt) {
-        auto response = send_http(adaptor_url, http::verb::post, path, &intercity_payload);
+        auto response = send_http(adaptor_url, HttpMethod::Post, path, &intercity_payload);
         if (is_success(response.status)) {
             std::cout << "Telemetria enviada ao InterSCity: " << room.id << "\n";
             return true;
@@ -513,15 +586,26 @@ int main() {
     try {
         load_dotenv();
 
-        const auto cataloguer_url_text = get_env("INTERSCITY_CATALOGUER_URL", "http://interscity-resource-cataloguer:3000");
-        const auto adaptor_url_text = get_env("INTERSCITY_ADAPTOR_URL", "http://interscity-resource-adaptor:3000");
-        const auto collector_url_text = get_env("INTERSCITY_COLLECTOR_URL", "http://interscity-data-collector:3000");
+        const auto intercity_base_url = get_env("INTERSCITY_BASE_URL", "");
+        const std::string default_cataloguer_url = intercity_base_url.empty()
+            ? "http://interscity-resource-cataloguer:3000"
+            : intercity_base_url + "/catalog";
+        const std::string default_adaptor_url = intercity_base_url.empty()
+            ? "http://interscity-resource-adaptor:3000"
+            : intercity_base_url + "/adaptor";
+        const std::string default_collector_url = intercity_base_url.empty()
+            ? "http://interscity-data-collector:3000"
+            : intercity_base_url + "/collector";
+        const auto effective_cataloguer_url = get_env("INTERSCITY_CATALOGUER_URL", default_cataloguer_url.c_str());
+        const auto adaptor_url_text = get_env("INTERSCITY_ADAPTOR_URL", default_adaptor_url.c_str());
+        const auto collector_url_text = get_env("INTERSCITY_COLLECTOR_URL", default_collector_url.c_str());
         const auto mqtt_broker = get_env("MQTT_BROKER", "mosquitto");
         const auto mqtt_port = std::stoi(get_env("MQTT_PORT", "1883"));
         mqtt_topic = get_env("MQTT_TOPIC", "ac-iot/+/sensores");
+        intercity_ssl_verify = env_flag_enabled(get_env("INTERSCITY_SSL_VERIFY", "false"));
 
-        if (!parse_http_url(cataloguer_url_text, cataloguer_url)) {
-            throw std::runtime_error("INTERSCITY_CATALOGUER_URL invalida: " + cataloguer_url_text);
+        if (!parse_http_url(effective_cataloguer_url, cataloguer_url)) {
+            throw std::runtime_error("INTERSCITY_CATALOGUER_URL invalida: " + effective_cataloguer_url);
         }
         if (!parse_http_url(adaptor_url_text, adaptor_url)) {
             throw std::runtime_error("INTERSCITY_ADAPTOR_URL invalida: " + adaptor_url_text);
@@ -529,6 +613,11 @@ int main() {
         if (!parse_http_url(collector_url_text, collector_url)) {
             throw std::runtime_error("INTERSCITY_COLLECTOR_URL invalida: " + collector_url_text);
         }
+
+        curl_global_init(CURL_GLOBAL_DEFAULT);
+        std::cout << "InterSCity Cataloguer: " << intercity_url_label(cataloguer_url) << "\n";
+        std::cout << "InterSCity Adaptor: " << intercity_url_label(adaptor_url) << "\n";
+        std::cout << "InterSCity Collector: " << intercity_url_label(collector_url) << "\n";
 
         ensure_intercity_catalog();
 
@@ -561,9 +650,11 @@ int main() {
 
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();
+        curl_global_cleanup();
         return loop_rc == MOSQ_ERR_SUCCESS ? EXIT_SUCCESS : EXIT_FAILURE;
     } catch (const std::exception& exc) {
         std::cerr << "Falha fatal no bridge InterSCity: " << exc.what() << "\n";
+        curl_global_cleanup();
         return EXIT_FAILURE;
     }
 }

@@ -114,17 +114,25 @@ Use o **Terminal** nativo ou **iTerm2**:
 docker compose up -d --build
 ```
 
-#### Plataforma InterSCity local
+#### Plataforma InterSCity UFMA
 
-O comando principal tambem sobe a pilha local do InterSCity: Resource Cataloguer, Resource Adaptor, Data Collector, Actuator Controller, Resource Discoverer, Kong, RabbitMQ, Mongo, Postgres e Redis.
+O bridge `interscity` assina `ac-iot/+/sensores`, cadastra as salas no
+InterSCity da UFMA e encaminha a telemetria para o Resource Adaptor.
 
-O bridge `interscity` assina `ac-iot/+/sensores`, cadastra as salas no InterSCity e encaminha a telemetria para o Resource Adaptor.
+O projeto usa diretamente as APIs REST dos microsservicos informados no
+tutorial:
 
-Endpoints principais:
+- Resource Cataloguer: `https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/catalog`
+- Resource Adaptor: `https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/adaptor`
+- Data Collector: `https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/collector`
+
+O gateway Kong legado nao e necessario para o fluxo MQTT -> InterSCity.
+
+Endpoints locais opcionais:
 - Resource Cataloguer: `http://localhost:3000`
 - Resource Adaptor: `http://localhost:3002`
 - Data Collector: `http://localhost:4000`
-- Actuator Controller: `http://localhost:5000`
+- Actuator Controller: `http://localhost:5001`
 - Resource Discoverer: `http://localhost:3004`
 - Kong: `http://localhost:8000`
 - RabbitMQ Management: `http://localhost:15672`
@@ -133,16 +141,39 @@ Endpoints principais:
 
 ### 3. Verificar o status dos serviços
 
-Após rodar o comando acima, verifique se todos os containers estão ativos e se o Mosquitto está com status `healthy`:
+Na primeira execução, aguarde o Mosquitto, Node-RED, simulador e bridge ficarem
+disponiveis.
+
+Verifique o status dos containers:
 
 ```bash
-docker-compose ps
+docker compose ps -a
 ```
+
+Depois, confirme que as APIs UFMA respondem:
+
+```bash
+curl https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/catalog/resources
+```
+
+```bash
+curl https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/collector/resources/00000000-0000-4000-8000-000000000101/data/last
+```
+
+Para acompanhar o cadastro das salas e o envio de telemetria:
+
+```bash
+docker compose logs -f interscity
+```
+
+O teste esta concluido quando `GET /resources` listar `sala01`, `sala02` e
+`sala03`, e a consulta `data/last` retornar valores de sensores.
 
 ### 4. Acessar as Interfaces
 
 *   **Painel de Controle Web:** Abra o arquivo `simulador-web/index.html` diretamente no seu navegador preferido (Chrome, Edge ou Safari).
 *   **Node-RED (Fluxos):** Acesse [http://localhost:1880](http://localhost:1880) para gerenciar as automações.
+*   **InterSCity UFMA (Recursos):** Acesse [https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/catalog/resources](https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/catalog/resources) para visualizar as salas cadastradas.
 
 ---
 
