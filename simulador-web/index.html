@@ -200,6 +200,7 @@
         .btn.apply {
             min-width: 70px;
             padding-inline: 9px;
+            white-space: nowrap;
         }
 
         .btn.ok {
@@ -220,15 +221,58 @@
 
         .comm-layout {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 10px;
+            grid-template-columns: 1fr;
+            gap: 9px;
             align-items: start;
         }
 
-        .comm-column {
+        .comm-summary,
+        .comm-status-grid,
+        .comm-actions,
+        .comm-meta {
             display: grid;
             gap: 8px;
             min-width: 0;
+        }
+
+        .comm-summary {
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            border: 1px solid rgba(91, 155, 255, 0.34);
+            border-radius: 9px;
+            background: rgba(91, 155, 255, 0.08);
+            padding: 10px;
+        }
+
+        .comm-summary span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.68rem;
+        }
+
+        .comm-summary b {
+            display: block;
+            margin-top: 2px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        .comm-summary code {
+            display: block;
+            max-width: 180px;
+            overflow: hidden;
+            color: var(--muted);
+            font-size: 0.68rem;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .comm-status-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .comm-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
         .comm-wide {
@@ -290,6 +334,73 @@
             overflow-wrap: anywhere;
             text-overflow: clip;
             white-space: normal;
+        }
+
+        .comm-meta {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .reading-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .reading-context {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .reading-context div {
+            min-width: 0;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            background: rgba(91, 155, 255, 0.06);
+            padding: 6px 8px;
+        }
+
+        .reading-context span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.62rem;
+        }
+
+        .reading-context b {
+            display: block;
+            margin-top: 2px;
+            overflow: hidden;
+            color: var(--text);
+            font-size: 0.72rem;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .reading-grid div {
+            min-width: 0;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 7px;
+            background: rgba(9, 13, 18, 0.42);
+            padding: 6px 8px;
+        }
+
+        .reading-grid span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.66rem;
+        }
+
+        .reading-grid b {
+            display: block;
+            margin-top: 2px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.78rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .layout {
@@ -420,7 +531,7 @@
 
         .room-row {
             display: grid;
-            grid-template-columns: minmax(130px, 1.25fr) repeat(3, minmax(82px, 0.85fr)) minmax(140px, 1fr);
+            grid-template-columns: minmax(130px, 1.2fr) repeat(3, minmax(82px, 0.8fr)) minmax(180px, 1fr);
             gap: 8px;
             align-items: center;
             width: 100%;
@@ -466,7 +577,7 @@
 
         .state-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 6px;
         }
 
@@ -588,11 +699,21 @@
             margin-top: 10px;
         }
 
+        .test-apply.compact {
+            margin-top: 8px;
+        }
+
         .pending {
             min-height: 18px;
             margin-top: 6px;
             color: var(--warn);
             font-size: 0.76rem;
+        }
+
+        .hint {
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 0.72rem;
         }
 
         .log {
@@ -711,12 +832,27 @@
             .setpoint-grid,
             .room-row,
             .test-grid,
+            .test-apply,
             .comm-layout {
                 grid-template-columns: 1fr;
             }
 
+            .btn.apply {
+                width: 100%;
+            }
+
             .state-grid {
                 grid-template-columns: repeat(3, 1fr);
+            }
+
+            .reading-context {
+                grid-template-columns: 1fr;
+            }
+
+            .comm-summary,
+            .comm-status-grid,
+            .comm-actions {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -731,7 +867,7 @@
             <div id="statusWrapper" class="statusbar">
                 <span class="chip"><span class="lamp mqtt-lamp"></span><span id="statusText">MQTT conectando</span></span>
                 <span class="chip"><span id="interscityLamp" class="lamp off"></span><span id="interscityStatus">InterSCity verificando</span></span>
-                <span class="chip">Salas <b id="roomCount">0</b></span>
+                <span class="chip">Total de salas: <b id="roomCount">0</b></span>
                 <span class="chip">Atualizado <b id="lastUpdate">--</b></span>
             </div>
         </header>
@@ -765,7 +901,7 @@
                             </div>
                             <div class="room-actions">
                                 <button class="btn small ok" type="button" title="Permite que a automação atue nas salas" onclick="sendGlobal({modo_ac:'ativo'}, 'Ativar automação global')">Auto ON</button>
-                                <button class="btn small danger" type="button" title="Bloqueia a automação e desliga o AC" onclick="sendGlobal({modo_ac:'desativado', comando:'desligar'}, 'Desativar automação global')">Auto OFF</button>
+                                <button class="btn small danger" type="button" title="Bloqueia a automação e desliga AC/luz" onclick="sendGlobal({modo_ac:'desativado', comando:'desligar', luz:'desligar'}, 'Desativar automação global')">Auto OFF</button>
                             </div>
                         </div>
                     </div>
@@ -794,7 +930,7 @@
                 <div class="panel-head">
                     <div>
                         <h2 id="detailTitle">Ambiente de testes</h2>
-                        <p id="detailSubtitle">Ajuste condições, controle atuadores e aplique em uma sala.</p>
+                        <p id="detailSubtitle">Injete cenários nos sensores ou faça controle manual com Auto OFF.</p>
                     </div>
                     <span id="detailBadge" class="mode-badge">--</span>
                 </div>
@@ -848,6 +984,7 @@
             uuid: interscityRoomUuids.sala01,
             lastSync: "--",
             lastCapability: "--",
+            lastReading: null,
             detail: "Aguardando verificacao"
         };
 
@@ -882,6 +1019,10 @@
             if (value === "ligar") return "ligado";
             if (value === "desligar") return "desligado";
             return value || "desligado";
+        }
+
+        function statusText(value) {
+            return value === null || value === undefined || value === "" ? "--" : normalizeOnOff(value);
         }
 
         function isOn(value) {
@@ -922,6 +1063,60 @@
             return Object.keys(capabilities).filter((name) => capabilities[name]?.length > 0);
         }
 
+        function latestCapabilityValue(capabilities, name) {
+            const readings = capabilities?.[name];
+            return Array.isArray(readings) && readings.length > 0 ? readings[0] : null;
+        }
+
+        function shortUuid(uuid) {
+            if (!uuid) return "--";
+            return uuid.length > 18 ? `${uuid.slice(0, 8)}...${uuid.slice(-6)}` : uuid;
+        }
+
+        function extractLastReading(data) {
+            const capabilities = data?.resources?.[0]?.capabilities || {};
+            const timestamp = latestCapabilityValue(capabilities, "temperatura")?.date
+                || latestCapabilityValue(capabilities, "umidade")?.date
+                || latestCapabilityValue(capabilities, "luminosidade")?.date
+                || null;
+            return {
+                temperatura: latestCapabilityValue(capabilities, "temperatura")?.value,
+                umidade: latestCapabilityValue(capabilities, "umidade")?.value,
+                luminosidade: latestCapabilityValue(capabilities, "luminosidade")?.value,
+                presenca: latestCapabilityValue(capabilities, "presenca")?.value,
+                status_ac: latestCapabilityValue(capabilities, "status_ac")?.value,
+                status_luz: latestCapabilityValue(capabilities, "status_luz")?.value,
+                data: timestamp ? new Date(timestamp).toLocaleTimeString() : "--"
+            };
+        }
+
+        function renderLastInterSCityReading() {
+            const reading = interscityState.lastReading;
+            if (!reading) {
+                return `
+                    <div class="comm-item comm-wide">
+                        <span>Ultima leitura InterSCity</span>
+                        <b>sem leitura recente</b>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="comm-item comm-wide">
+                    <span>Ultima leitura InterSCity</span>
+                    <div class="reading-grid">
+                        <div><span>Temperatura</span><b>${fmt(reading.temperatura, "°C", 1)}</b></div>
+                        <div><span>Umidade</span><b>${fmt(reading.umidade, "%", 0)}</b></div>
+                        <div><span>Luminosidade</span><b>${fmt(reading.luminosidade, " lx", 0)}</b></div>
+                        <div><span>Presença</span><b>${boolText(reading.presenca)}</b></div>
+                        <div><span>AC</span><b>${statusText(reading.status_ac)}</b></div>
+                        <div><span>Luz</span><b>${statusText(reading.status_luz)}</b></div>
+                        <div><span>Data</span><b>${reading.data}</b></div>
+                    </div>
+                </div>
+            `;
+        }
+
         function setInterSCityStatus(online, text) {
             interscityState.online = online;
             const lampEl = document.getElementById("interscityLamp");
@@ -950,12 +1145,15 @@
             const catalogUrl = `${interscityCataloguerUrl}/resources`;
             const collectorUrl = `${interscityCollectorUrl}/resources/${interscityState.uuid}/data/last`;
             panel.innerHTML = `
-                <div class="comm-column">
-                    <h3 class="comm-title">Monitoramento</h3>
-                    <div class="comm-item">
-                        <span>Fluxo InterSCity</span>
-                        <b title="Bridge local -> Resource Cataloguer -> Resource Adaptor -> Data Collector">Bridge REST -> Cataloguer/Adaptor -> Collector</b>
+                <div class="comm-summary">
+                    <div>
+                        <span>Dados InterSCity da sala selecionada</span>
+                        <b>${interscityState.room}</b>
                     </div>
+                    <code title="${interscityState.uuid || "UUID nao mapeado"}">${shortUuid(interscityState.uuid)}</code>
+                </div>
+
+                <div class="comm-status-grid">
                     <div class="comm-item">
                         <span>Resource Cataloguer</span>
                         <b title="${catalogUrl}">${interscityState.cataloguer}</b>
@@ -965,32 +1163,38 @@
                         <b title="${collectorUrl}">${interscityState.collector}</b>
                     </div>
                     <div class="comm-item">
-                        <span>Ultima sincronizacao</span>
+                        <span>Sincronizacao</span>
                         <b>${interscityState.lastSync}</b>
                     </div>
                 </div>
-                <div class="comm-column">
-                    <h3 class="comm-title">Consulta</h3>
-                    <div class="comm-item">
-                        <span>Sala monitorada</span>
-                        <b title="${interscityState.uuid || "UUID nao mapeado"}">${interscityState.room}</b>
-                    </div>
+
+                <div class="comm-item comm-wide">
+                    <span>Fluxo</span>
+                    <b title="Bridge local -> Resource Cataloguer -> Resource Adaptor -> Data Collector">MQTT sensores -> Bridge REST -> InterSCity UFMA -> Data Collector</b>
+                </div>
+
+                <div class="comm-actions">
                     <button class="comm-link" type="button" onclick="openExternal('${catalogUrl}')">
-                        <span>Catalogo InterSCity UFMA</span>
-                        <b>Resources cadastrados</b>
+                        <span>InterSCity UFMA</span>
+                        <b>Ver resources cadastrados</b>
                     </button>
                     <button class="comm-link" type="button" onclick="openExternal('${collectorUrl}')">
                         <span>Data Collector</span>
-                        <b>Ultima leitura da sala</b>
+                        <b>Abrir ultima leitura de ${interscityState.room}</b>
                     </button>
+                </div>
+
+                ${renderLastInterSCityReading()}
+
+                <div class="comm-meta">
                     <div class="comm-item">
                         <span>Capabilities recebidas</span>
                         <b title="${interscityState.lastCapability}">${interscityState.lastCapability}</b>
                     </div>
-                </div>
-                <div class="comm-item comm-wide">
-                    <span>UUID InterSCity</span>
-                    <b title="${interscityState.uuid || "UUID nao mapeado"}">${interscityState.uuid || "--"}</b>
+                    <div class="comm-item comm-wide">
+                        <span>UUID InterSCity</span>
+                        <b title="${interscityState.uuid || "UUID nao mapeado"}">${interscityState.uuid || "--"}</b>
+                    </div>
                 </div>
             `;
         }
@@ -1022,6 +1226,9 @@
                 if (collectorResponse.ok) {
                     const data = await collectorResponse.json();
                     capabilities = extractCapabilities(data);
+                    interscityState.lastReading = extractLastReading(data);
+                } else {
+                    interscityState.lastReading = null;
                 }
 
                 interscityState.lastSync = new Date().toLocaleTimeString();
@@ -1033,6 +1240,7 @@
                 interscityState.collector = "indisponivel";
                 interscityState.lastSync = new Date().toLocaleTimeString();
                 interscityState.lastCapability = "sem resposta REST";
+                interscityState.lastReading = null;
                 interscityState.detail = error.message || "Falha na consulta";
                 setInterSCityStatus(false, "InterSCity indisponivel");
             }
@@ -1065,6 +1273,7 @@
                         <div class="metric"><span>Umidade</span><b>${fmt(room.umidade, "%", 0)}</b></div>
                         <div class="metric"><span>Luz amb.</span><b>${fmt(room.luminosidade, " lx", 0)}</b></div>
                         <div class="state-grid">
+                            <div class="state"><span>Pres.</span><b title="${room.presenca ? "presença detectada" : "sem presença"}">${lamp(room.presenca)}</b></div>
                             <div class="state"><span>AC</span><b title="${normalizeOnOff(room.status_ac)}">${lamp(room.status_ac)}</b></div>
                             <div class="state"><span>Luz</span><b title="${normalizeOnOff(room.status_luz)}">${lamp(room.status_luz)}</b></div>
                             <div class="state"><span>Auto</span><b title="${autoActive ? "ativo" : "desativado"}">${autoActive ? lamp(true) : lamp(false)}</b></div>
@@ -1084,7 +1293,7 @@
 
             if (!selectedRoom || !rooms[selectedRoom]) {
                 title.innerText = "Ambiente de testes";
-                subtitle.innerText = "Ajuste condições e controles; depois escolha onde aplicar.";
+                subtitle.innerText = "Injete cenários nos sensores ou faça controle manual com Auto OFF.";
                 badge.style.display = "none";
                 panel.innerHTML = '<div class="empty">Nenhuma sala selecionada.</div>';
                 return;
@@ -1094,12 +1303,12 @@
             const autoActive = room.modo_ac !== "desativado";
             const draft = getTestDraft(room);
             title.innerText = "Ambiente de testes";
-            subtitle.innerText = "Ajuste condições e controles; depois escolha onde aplicar.";
+            subtitle.innerText = "Injete cenários nos sensores ou faça controle manual com Auto OFF.";
             badge.style.display = "none";
 
             panel.innerHTML = `
                 <section class="section">
-                    <h3>Ambiente de testes</h3>
+                    <h3>Cenário de sensores</h3>
                     <div class="test-grid">
                         <div class="field">
                             <label for="testTemp">Temperatura <b id="lblTestTemp">${fmt(draft.temperatura, "°C", 1)}</b></label>
@@ -1121,26 +1330,57 @@
                             </select>
                         </div>
                     </div>
-                    <h3 style="margin-top:14px">Controle direto</h3>
+                    <div class="hint">Use para simular leituras dos sensores, inclusive presença. Com Auto ON, luz reage à presença e o AC só entra após presença contínua.</div>
+                    <div class="test-apply compact">
+                        <div class="field">
+                            <label for="sensorTarget">Sala</label>
+                            <select id="sensorTarget">
+                                <option value="" selected disabled>Escolha onde aplicar</option>
+                                <option value="all">TODAS AS SALAS</option>
+                                ${roomOrder.map((id) => `<option value="${id}">${id.toUpperCase()}</option>`).join("")}
+                            </select>
+                        </div>
+                        <button class="btn primary apply" type="button" onclick="sendSensorScenario(document.getElementById('sensorTarget').value)">Aplicar sensores</button>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <h3>Controle direto dos atuadores</h3>
                     <div class="control-list">
                         ${testSegmentedControl("Ar-condicionado", "testAcCommand", room.status_ac, "ligar", "desligar", draft.controls.testAcCommand)}
                         ${testSegmentedControl("Iluminação", "testLightCommand", room.status_luz, "ligar", "desligar", draft.controls.testLightCommand)}
-                        ${testSegmentedControl("Automação", "testAutoMode", autoActive ? "ligado" : "desligado", "ativo", "desativado", draft.controls.testAutoMode)}
+                    </div>
+                    <div class="hint">Use para intervenção manual em AC/luz. Ao enviar, a automação fica OFF para não sobrescrever o comando manual.</div>
+                    <div class="test-apply">
+                        <div class="field">
+                            <label for="controlTarget">Sala</label>
+                            <select id="controlTarget">
+                                <option value="" selected disabled>Escolha onde aplicar</option>
+                                <option value="all">TODAS AS SALAS</option>
+                                ${roomOrder.map((id) => `<option value="${id}">${id.toUpperCase()}</option>`).join("")}
+                            </select>
+                        </div>
+                        <button class="btn primary apply" type="button" onclick="sendDirectControl(document.getElementById('controlTarget').value)">Enviar controle</button>
                     </div>
                     <div class="pending">${pendingText(room)}</div>
                 </section>
 
                 <section class="section">
-                    <h3>Aplicar cenário</h3>
+                    <h3>Modo da automação</h3>
+                    <div class="control-list">
+                        ${testSegmentedControl("Automação", "testAutoMode", autoActive ? "ligado" : "desligado", "ativo", "desativado", draft.controls.testAutoMode)}
+                    </div>
+                    <div class="hint">Auto ON devolve o controle ao Node-RED. AC é liberado após 20s de presença; ausência contínua desliga AC/luz após 10s.</div>
                     <div class="test-apply">
                         <div class="field">
-                            <label for="testTarget">Sala</label>
-                            <select id="testTarget">
+                            <label for="automationTarget">Sala</label>
+                            <select id="automationTarget">
+                                <option value="" selected disabled>Escolha onde aplicar</option>
                                 <option value="all">TODAS AS SALAS</option>
-                                ${roomOrder.map((id) => `<option value="${id}" ${id === selectedRoom ? "selected" : ""}>${id.toUpperCase()}</option>`).join("")}
+                                ${roomOrder.map((id) => `<option value="${id}">${id.toUpperCase()}</option>`).join("")}
                             </select>
                         </div>
-                        <button class="btn primary apply" type="button" onclick="sendTestPayload(document.getElementById('testTarget').value)">Aplicar</button>
+                        <button class="btn primary apply" type="button" onclick="sendAutomationMode(document.getElementById('automationTarget').value)">Aplicar auto</button>
                     </div>
                 </section>
             `;
@@ -1308,7 +1548,19 @@
             sendGlobal(payload, "Aplicar setpoints globais");
         }
 
-        function sendTestPayload(id) {
+        function sendPayloadToTarget(id, payload, globalLabel, roomLabel) {
+            if (id === "all") {
+                sendGlobal(payload, globalLabel);
+                return;
+            }
+            sendRoomCommand(id, payload, roomLabel);
+        }
+
+        function sendSensorScenario(id) {
+            if (!id) {
+                showToast("Escolha onde aplicar os sensores.", true);
+                return;
+            }
             const temp = Number(document.getElementById("testTemp").value);
             const hum = Number(document.getElementById("testHum").value);
             const lux = Number(document.getElementById("testLux").value);
@@ -1319,17 +1571,37 @@
                 luminosidade: lux,
                 presenca
             };
-            const ac = document.getElementById("testAcCommand");
-            const light = document.getElementById("testLightCommand");
-            const auto = document.getElementById("testAutoMode");
-            if (ac.dataset.dirty === "true") payload.comando = ac.value;
-            if (light.dataset.dirty === "true") payload.luz = light.value;
-            if (auto.dataset.dirty === "true") payload.modo_ac = auto.value;
-            if (id === "all") {
-                sendGlobal(payload, "Aplicar teste em todas");
+            sendPayloadToTarget(id, payload, "Aplicar sensores em todas", "Aplicar sensores");
+        }
+
+        function sendDirectControl(id) {
+            if (!id) {
+                showToast("Escolha onde aplicar o controle.", true);
                 return;
             }
-            sendRoomCommand(id, payload, "Aplicar teste");
+            const ac = document.getElementById("testAcCommand");
+            const light = document.getElementById("testLightCommand");
+            const payload = {};
+            if (ac.dataset.dirty === "true") payload.comando = ac.value;
+            if (light.dataset.dirty === "true") payload.luz = light.value;
+
+            if (Object.keys(payload).length === 0) {
+                showToast("Altere AC ou luz antes de enviar.", true);
+                return;
+            }
+
+            payload.modo_ac = "desativado";
+            sendPayloadToTarget(id, payload, "Enviar controle em todas", "Enviar controle");
+        }
+
+        function sendAutomationMode(id) {
+            if (!id) {
+                showToast("Escolha onde aplicar a automação.", true);
+                return;
+            }
+            const auto = document.getElementById("testAutoMode");
+            const payload = { modo_ac: auto.value };
+            sendPayloadToTarget(id, payload, "Aplicar automação em todas", "Aplicar automação");
         }
 
         function log(topic, payload, type, label) {
