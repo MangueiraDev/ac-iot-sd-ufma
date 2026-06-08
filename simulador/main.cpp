@@ -1,11 +1,14 @@
 #include <cstdlib>
 #include <cstring>
+#include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <map>
 #include <random>
 #include <string>
 #include <thread>
 #include <chrono>
+#include <ctime>
 
 #include <mosquitto.h>
 #include <nlohmann/json.hpp>
@@ -26,11 +29,13 @@ struct RoomConfig {
     double umidade_max;
     int luz_min;
     int luz_max;
-    double temp_simulada; // Temperatura forçada via simulador web
+    double temp_simulada; // Temperatura atual do sensor
     bool presenca; // Sensor de presença humana
-    double umidade_simulada; // Forçada
-    int luz_simulada; // Forçada
+    double umidade_simulada; // Umidade atual do sensor
+    int luz_simulada; // Luminosidade atual do sensor
     std::string modo_ac; // "ativo" ou "desativado"
+    long presenca_desde;
+    long ausencia_desde;
 };
 
 static std::map<std::string, RoomConfig> SALAS;
@@ -39,6 +44,10 @@ static std::string BROKER;
 static int PORT;
 static int INTERVALO;
 static struct mosquitto* MOSQ = nullptr;
+static constexpr long DELAY_AC_PRESENCA_SEG = 20;
+static constexpr long DELAY_AUSENCIA_SEG = 10;
+static constexpr double CHANCE_SAIR_SALA = 0.04;
+static constexpr double CHANCE_ENTRAR_SALA = 0.06;
 
 static std::string getenv_or(const char* key, const char* def) {
     const char* value = std::getenv(key);
@@ -55,26 +64,94 @@ static int random_int(int a, int b) {
     return dist(RNG);
 }
 
-static json gerar_dados(const RoomConfig& sala) {
-    double temperatura;
-    if (sala.temp_simulada > 0.0) {
-        temperatura = sala.temp_simulada;
-    } else if (sala.status == "desligado") {
-        temperatura = random_double(sala.temp_max, sala.temp_max + 2.0);
-    } else {
-        temperatura = random_double(sala.setpoint - 0.5, sala.setpoint + 0.5);
+static bool chance(double probability) {
+    std::bernoulli_distribution dist(probability);
+    return dist(RNG);
+}
+
+static double approach(double current, double target, double step) {
+    if (current < target) {
+        return std::min(current + step, target);
+    }
+    return std::max(current - step, target);
+}
+
+static void atualizar_ambiente(RoomConfig& sala) {
+    const long agora = static_cast<long>(std::time(nullptr));
+
+    if (sala.temp_simulada <= 0.0) {
+        sala.temp_simulada = random_double(sala.temp_min, sala.temp_max);
+    }
+    if (sala.umidade_simulada <= 0.0) {
+        sala.umidade_simulada = random_double(sala.umidade_min, sala.umidade_max);
+    }
+    if (sala.luz_simulada < 0) {
+        sala.luz_simulada = random_int(sala.luz_min, sala.luz_max);
     }
 
-    double umidade = (sala.umidade_simulada > 0.0) ? sala.umidade_simulada : random_double(sala.umidade_min, sala.umidade_max);
-    
-    int luminosidade;
-    if (sala.luz_simulada >= 0) {
-        luminosidade = sala.luz_simulada;
-    } else {
-        luminosidade = (sala.luz == "ligado")
-            ? random_int(800, 1100)
-            : random_int(5, 50);
+    if (chance(sala.presenca ? CHANCE_SAIR_SALA : CHANCE_ENTRAR_SALA)) {
+        sala.presenca = !sala.presenca;
+        sala.presenca_desde = sala.presenca ? agora : 0;
+        sala.ausencia_desde = sala.presenca ? 0 : agora;
     }
+    if (sala.presenca && sala.presenca_desde <= 0) {
+        sala.presenca_desde = agora;
+    }
+    if (!sala.presenca && sala.ausencia_desde <= 0) {
+        sala.ausencia_desde = agora;
+    }
+
+    if (sala.modo_ac == "ativo") {
+        if (!sala.presenca) {
+            sala.presenca_desde = 0;
+            const bool ausencia_longa = (agora - sala.ausencia_desde) >= DELAY_AUSENCIA_SEG;
+            if (ausencia_longa) {
+                sala.status = "desligado";
+                sala.luz = "desligado";
+            }
+        } else {
+            sala.ausencia_desde = 0;
+            sala.luz = "ligado";
+            const bool ac_liberado = (agora - sala.presenca_desde) >= DELAY_AC_PRESENCA_SEG;
+            if (ac_liberado && (sala.temp_simulada > sala.setpoint + 1.0 || sala.umidade_simulada > sala.setpoint_umidade + 6.0)) {
+                sala.status = "ligado";
+            } else if (sala.temp_simulada < sala.setpoint - 1.5 && sala.umidade_simulada <= sala.setpoint_umidade + 2.0) {
+                sala.status = "desligado";
+            }
+        }
+    }
+
+    double temperatura_alvo;
+    if (sala.status == "ligado") {
+        temperatura_alvo = sala.setpoint + random_double(-0.4, 0.6);
+    } else {
+        temperatura_alvo = random_double(sala.temp_min + 2.0, sala.temp_max + 2.5) + (sala.presenca ? 0.8 : 0.0);
+    }
+
+    sala.temp_simulada = approach(sala.temp_simulada, temperatura_alvo, random_double(0.8, 1.8));
+    sala.temp_simulada += random_double(-0.45, 0.45);
+    sala.temp_simulada = std::clamp(sala.temp_simulada, 10.0, 45.0);
+
+    double umidade_alvo = sala.status == "ligado"
+        ? sala.setpoint_umidade + random_double(-4.0, 2.0)
+        : random_double(sala.umidade_min, sala.umidade_max + (sala.presenca ? 5.0 : 0.0));
+    sala.umidade_simulada = approach(sala.umidade_simulada, umidade_alvo, random_double(2.5, 6.0));
+    sala.umidade_simulada += random_double(-2.0, 2.0);
+    sala.umidade_simulada = std::clamp(sala.umidade_simulada, 20.0, 90.0);
+
+    int luz_alvo;
+    if (sala.luz == "ligado") {
+        luz_alvo = random_int(std::max(350, sala.setpoint_luz + 80), 1100);
+    } else {
+        luz_alvo = random_int(sala.luz_min, std::max(sala.luz_min + 20, sala.luz_max / 3));
+    }
+    sala.luz_simulada = static_cast<int>(approach(static_cast<double>(sala.luz_simulada), static_cast<double>(luz_alvo), random_double(80.0, 220.0)));
+    sala.luz_simulada += random_int(-35, 35);
+    sala.luz_simulada = std::clamp(sala.luz_simulada, 0, 1500);
+}
+
+static json gerar_dados(RoomConfig& sala) {
+    atualizar_ambiente(sala);
 
     return json{
         {"id_sala", sala.id},
@@ -83,19 +160,19 @@ static json gerar_dados(const RoomConfig& sala) {
         {"setpoint_umidade", sala.setpoint_umidade},
         {"setpoint_luz", sala.setpoint_luz},
         {"status_luz", sala.luz},
-        {"temperatura", std::round(temperatura * 100.0) / 100.0},
-        {"umidade", std::round(umidade * 100.0) / 100.0},
-        {"luminosidade", luminosidade},
-        {"temperatura_forcada", sala.temp_simulada > 0.0},
-        {"umidade_forcada", sala.umidade_simulada > 0.0},
-        {"luminosidade_forcada", sala.luz_simulada >= 0},
+        {"temperatura", std::round(sala.temp_simulada * 100.0) / 100.0},
+        {"umidade", std::round(sala.umidade_simulada * 100.0) / 100.0},
+        {"luminosidade", sala.luz_simulada},
+        {"temperatura_forcada", false},
+        {"umidade_forcada", false},
+        {"luminosidade_forcada", false},
         {"presenca", sala.presenca},
         {"modo_ac", sala.modo_ac},
         {"timestamp", static_cast<long>(std::time(nullptr))}
     };
 }
 
-static void publish_room(const RoomConfig& sala) {
+static void publish_room(RoomConfig& sala) {
     json dados = gerar_dados(sala);
     std::string payload = dados.dump();
     int ret = mosquitto_publish(MOSQ, nullptr, sala.topic.c_str(), static_cast<int>(payload.size()), payload.c_str(), 0, true);
@@ -105,7 +182,7 @@ static void publish_room(const RoomConfig& sala) {
 }
 
 static void publish_all_rooms() {
-    for (const auto& [id, sala] : SALAS) {
+    for (auto& [id, sala] : SALAS) {
         publish_room(sala);
     }
 }
@@ -221,6 +298,8 @@ static void on_message(struct mosquitto* mosq, void* userdata, const struct mosq
             if (dados.contains("presenca")) {
                 try {
                     sala.presenca = dados["presenca"].get<bool>();
+                    sala.presenca_desde = sala.presenca ? static_cast<long>(std::time(nullptr)) : 0;
+                    sala.ausencia_desde = sala.presenca ? 0 : static_cast<long>(std::time(nullptr));
                     mudou = true;
                 } catch (...) {
                 }
@@ -247,6 +326,9 @@ static void on_message(struct mosquitto* mosq, void* userdata, const struct mosq
                 if (modo == "ativo" || modo == "desativado") {
                     if (sala.modo_ac != modo) {
                         sala.modo_ac = modo;
+                        const long agora = static_cast<long>(std::time(nullptr));
+                        sala.presenca_desde = sala.presenca ? agora : 0;
+                        sala.ausencia_desde = sala.presenca ? 0 : agora;
                         mudou = true;
                     }
                 }
@@ -276,9 +358,9 @@ int main() {
     if (INTERVALO <= 0) INTERVALO = 20;
 
     SALAS = {
-        {"sala01", {"sala01", "ac-iot/sala01/sensores", "ligado", 22.0, 55.0, 300, "desligado", 20.0, 25.0, 40.0, 50.0, 300, 500, 0.0, false, 0.0, -1, "ativo"}},
-        {"sala02", {"sala02", "ac-iot/sala02/sensores", "ligado", 24.0, 60.0, 500, "desligado", 25.0, 35.0, 50.0, 70.0, 800, 1000, 0.0, false, 0.0, -1, "ativo"}},
-        {"sala03", {"sala03", "ac-iot/sala03/sensores", "ligado", 23.0, 55.0, 300, "desligado", 22.0, 28.0, 45.0, 60.0, 100, 800, 0.0, false, 0.0, -1, "ativo"}}
+        {"sala01", {"sala01", "ac-iot/sala01/sensores", "ligado", 22.0, 55.0, 300, "desligado", 20.0, 27.0, 40.0, 58.0, 20, 600, 24.8, false, 48.0, 180, "ativo", 0, static_cast<long>(std::time(nullptr))}},
+        {"sala02", {"sala02", "ac-iot/sala02/sensores", "desligado", 24.0, 60.0, 500, "desligado", 23.0, 35.0, 48.0, 72.0, 15, 900, 30.5, true, 63.0, 220, "ativo", static_cast<long>(std::time(nullptr)), 0}},
+        {"sala03", {"sala03", "ac-iot/sala03/sensores", "desligado", 23.0, 55.0, 300, "desligado", 21.0, 30.0, 42.0, 65.0, 10, 800, 27.2, false, 56.0, 140, "ativo", 0, static_cast<long>(std::time(nullptr))}}
     };
 
     mosquitto_lib_init();
