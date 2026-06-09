@@ -962,6 +962,7 @@
         const interscityBaseUrl = "https://cidadesinteligentes.lsdi.ufma.br/interscity_lh";
         const interscityCataloguerUrl = `${interscityBaseUrl}/catalog`;
         const interscityCollectorUrl = `${interscityBaseUrl}/collector`;
+        const interscityRequestTimeoutMs = 4000;
         const interscityRoomUuids = {
             sala01: "00000000-0000-4000-8000-000000000101",
             sala02: "00000000-0000-4000-8000-000000000102",
@@ -1139,6 +1140,16 @@
             window.open(url, "_blank", "noopener,noreferrer");
         }
 
+        async function fetchWithTimeout(url, timeoutMs = interscityRequestTimeoutMs) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                return await fetch(url, { signal: controller.signal });
+            } finally {
+                clearTimeout(timeoutId);
+            }
+        }
+
         function renderInterSCityPanel() {
             const panel = document.getElementById("interscityPanel");
             if (!panel) return;
@@ -1213,17 +1224,23 @@
 
             interscityState.room = roomId.toUpperCase();
             interscityState.uuid = uuid;
-            if (manual) setInterSCityStatus(false, "InterSCity verificando");
+            setInterSCityStatus(false, "InterSCity verificando");
 
             try {
-                const catalogResponse = await fetch(`${interscityCataloguerUrl}/resources`);
-                interscityState.cataloguer = catalogResponse.ok ? "online" : `HTTP ${catalogResponse.status}`;
+                const [catalogResult, collectorResult] = await Promise.allSettled([
+                    fetchWithTimeout(`${interscityCataloguerUrl}/resources`),
+                    fetchWithTimeout(`${interscityCollectorUrl}/resources/${uuid}/data/last`)
+                ]);
+                const catalogResponse = catalogResult.status === "fulfilled" ? catalogResult.value : null;
+                const collectorResponse = collectorResult.status === "fulfilled" ? collectorResult.value : null;
+                const catalogError = catalogResult.status === "rejected" ? catalogResult.reason : null;
+                const collectorError = collectorResult.status === "rejected" ? collectorResult.reason : null;
 
-                const collectorResponse = await fetch(`${interscityCollectorUrl}/resources/${uuid}/data/last`);
-                interscityState.collector = collectorResponse.ok ? "online" : `HTTP ${collectorResponse.status}`;
+                interscityState.cataloguer = catalogResponse ? (catalogResponse.ok ? "online" : `HTTP ${catalogResponse.status}`) : "indisponivel";
+                interscityState.collector = collectorResponse ? (collectorResponse.ok ? "online" : `HTTP ${collectorResponse.status}`) : "indisponivel";
 
                 let capabilities = [];
-                if (collectorResponse.ok) {
+                if (collectorResponse?.ok) {
                     const data = await collectorResponse.json();
                     capabilities = extractCapabilities(data);
                     interscityState.lastReading = extractLastReading(data);
@@ -1233,16 +1250,25 @@
 
                 interscityState.lastSync = new Date().toLocaleTimeString();
                 interscityState.lastCapability = capabilities.length > 0 ? capabilities.join(", ") : "sem leitura recente";
-                interscityState.detail = collectorResponse.ok ? "Data Collector consultado" : "Data Collector indisponivel";
-                setInterSCityStatus(catalogResponse.ok && collectorResponse.ok, collectorResponse.ok ? "InterSCity sincronizado" : "InterSCity parcial");
+                const hasTimeout = [catalogError, collectorError].some((error) => error?.name === "AbortError");
+                const statusText = collectorResponse?.ok
+                    ? "InterSCity sincronizado"
+                    : (catalogResponse?.ok ? "InterSCity parcial" : (hasTimeout ? "InterSCity sem resposta" : "InterSCity indisponivel"));
+                interscityState.detail = collectorResponse?.ok
+                    ? "Data Collector consultado"
+                    : (catalogError || collectorError ? "Sem resposta REST no navegador" : "Data Collector indisponivel");
+                setInterSCityStatus(
+                    Boolean(catalogResponse?.ok && collectorResponse?.ok),
+                    statusText
+                );
             } catch (error) {
                 interscityState.cataloguer = "indisponivel";
                 interscityState.collector = "indisponivel";
                 interscityState.lastSync = new Date().toLocaleTimeString();
                 interscityState.lastCapability = "sem resposta REST";
                 interscityState.lastReading = null;
-                interscityState.detail = error.message || "Falha na consulta";
-                setInterSCityStatus(false, "InterSCity indisponivel");
+                interscityState.detail = error.name === "AbortError" ? "Tempo limite na consulta" : (error.message || "Falha na consulta");
+                setInterSCityStatus(false, error.name === "AbortError" ? "InterSCity sem resposta" : "InterSCity indisponivel");
             }
 
             renderInterSCityPanel();
@@ -1683,7 +1709,7 @@
             seedInitialRooms();
             renderRooms();
             pollInterSCity();
-            interscityTimer = setInterval(pollInterSCity, 5000);
+            interscityTimer = setInterval(pollInterSCity, 10000);
             connect();
         });
     </script>

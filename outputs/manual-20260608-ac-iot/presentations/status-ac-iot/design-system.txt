@@ -1,0 +1,7 @@
+Slide size: 1280x720.
+Palette: paper #F7F4ED, ink #17202A, muted #667085, blue #2563EB, green #16A34A, amber #D97706, red #DC2626, slate #334155.
+Typography: Aptos Display for titles, Aptos for body, Aptos Mono for technical labels.
+Grammar: off-white background, thin rules, compact proof objects, restrained status colors.
+Kickers: uppercase small labels with a short blue rule.
+Charts/diagrams: editable rectangles, lines and text; no decorative imagery.
+Footer: slide number and source note in small muted text.
