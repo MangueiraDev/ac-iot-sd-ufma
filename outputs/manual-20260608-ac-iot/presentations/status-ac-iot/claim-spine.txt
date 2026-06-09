@@ -1,0 +1,13 @@
+Thesis: O prototipo AC-IoT ja opera como sistema integrado de simulacao, automacao e painel, com pendencias concentradas em firmware, energia, atuacao fisica e testes finais.
+Audience: avaliadores e equipe do projeto.
+Arc: objetivo -> arquitetura -> atualizacoes -> funcionamento -> integracao -> Gantt -> lacunas -> proximos passos.
+
+Slides:
+1. O prototipo saiu da arquitetura planejada para um fluxo integrado operacional. Proof: metric rail.
+2. A arquitetura atual conecta simulador, MQTT, automacao, painel e InterSCity. Proof: system flow.
+3. As atualizacoes consolidam a base funcional do prototipo. Proof: completion list.
+4. A automacao ja aplica regras de conforto e economia por presenca e setpoints. Proof: rule ladder.
+5. O painel virou a principal superficie de operacao e validacao. Proof: UI capability map.
+6. O Gantt resume o deslocamento: base concluida, hardware e testes replanejados. Proof: compact Gantt.
+7. As pendencias estao claras e concentradas fora do nucleo MQTT/web. Proof: risk matrix.
+8. A finalizacao deve transformar prototipo integrado em demonstracao validada. Proof: roadmap.

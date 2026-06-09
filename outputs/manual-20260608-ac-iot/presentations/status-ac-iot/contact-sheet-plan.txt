@@ -1,0 +1,8 @@
+1. Cover with metric rail.
+2. Architecture flow.
+3. Two-column update proof.
+4. Automation sequence.
+5. Operational panel capability map.
+6. Gantt timeline summary.
+7. Pending matrix.
+8. Roadmap close.
