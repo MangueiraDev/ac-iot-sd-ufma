@@ -1,27 +1,80 @@
-x-interscity-amd64: &interscity-amd64
-  # Legacy InterSCity images are published only for amd64.
-  platform: linux/amd64
+# AC-IoT SD UFMA — stack principal
+# Plataforma InterSCity: cidadesinteligentes.lsdi.ufma.br (remota, não local)
+# Para adicionar salas: edite config/rooms.yaml — sem recompilar.
 
 services:
-  # MQTT broker used by the simulator, Node-RED and the InterSCity bridge.
+
+  # ── Broker MQTT (TCP 1883 + WebSocket 9001) ────────────────────────────────
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: ac_iot_mosquitto
     ports:
-      - "1883:1883"
-      - "9001:9001"
+      - "1883:1883"   # MQTT TCP (simulator, bridge, Node-RED)
+      - "9001:9001"   # MQTT WebSocket (dashboard browser)
     volumes:
       - ./docker/mosquitto/config:/mosquitto/config:ro
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "mosquitto_pub -h localhost -t healthcheck -m ok"]
+      test: ["CMD-SHELL", "mosquitto_pub -h localhost -t _health -m ok -q 0"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Node-RED automation and dashboard.
+  # ── Simulador de sensores IoT (rooms carregados do YAML) ──────────────────
+  simulator:
+    build:
+      context: ./src/simulator
+    container_name: ac_iot_simulator
+    volumes:
+      - ./config:/config:ro
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+      - PUBLISH_INTERVAL=30       # segundos entre publicações
+      - CONFIG_PATH=/config/rooms.yaml
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Bridge MQTT → InterSCity UFMA (pipeline assíncrono, sem bloquear MQTT) ─
+  bridge:
+    build:
+      context: ./src/bridge
+    container_name: ac_iot_bridge
+    volumes:
+      - ./config:/config:ro
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_TOPIC=ac-iot/+/sensores
+      - INTERSCITY_BASE_URL=https://cidadesinteligentes.lsdi.ufma.br/interscity_lh
+      - INTERSCITY_SSL_VERIFY=false
+      - CONFIG_PATH=/config/rooms.yaml
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Dashboard web em tempo real (Nginx serve static) ──────────────────────
+  web:
+    image: nginx:alpine
+    container_name: ac_iot_web
+    ports:
+      - "8080:80"     # Acesso: http://localhost:8080
+    volumes:
+      - ./src/web/static:/usr/share/nginx/html:ro
+      - ./src/web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── Node-RED (opcional — automações avançadas) ────────────────────────────
   nodered:
     image: nodered/node-red:latest
     container_name: ac_iot_nodered
@@ -35,275 +88,9 @@ services:
       mosquitto:
         condition: service_healthy
     restart: unless-stopped
-
-  # Automatic ESP32 room simulator.
-  simulador:
-    build:
-      context: ./simulador
-    container_name: ac_iot_simulador
-    environment:
-      - MQTT_BROKER=mosquitto
-      - MQTT_PORT=1883
-      - PUBLISH_INTERVAL=30
-    depends_on:
-      mosquitto:
-        condition: service_healthy
-    restart: unless-stopped
-
-  # InterSCity platform dependencies.
-  interscity-mongo:
-    <<: *interscity-amd64
-    container_name: interscity-mongo
-    image: mongo:3.4
-    environment:
-      AUTH: "no"
-    volumes:
-      - interscity_mongo_data:/data/db
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "mongo --quiet --eval \"db.adminCommand('ping').ok\" | grep 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
-  interscity-postgres:
-    <<: *interscity-amd64
-    container_name: interscity-postgres
-    image: postgres:9.4
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin
-    volumes:
-      - interscity_postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
-  interscity-redis:
-    image: redis
-    container_name: interscity-redis
-    restart: unless-stopped
-
-  interscity-rabbitmq:
-    <<: *interscity-amd64
-    container_name: interscity-rabbitmq
-    image: rabbitmq:3.6.5
-    command: bash -c "rabbitmq-plugins enable rabbitmq_management && rabbitmq-server"
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "rabbitmqctl status"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  interscity-mongo-cache:
-    <<: *interscity-amd64
-    container_name: interscity-mongo-cache
-    image: mongo:3.4
-    environment:
-      AUTH: "no"
-    command: mongod --bind_ip 0.0.0.0
-    tmpfs:
-      - /data/db
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "mongo --quiet --eval \"db.adminCommand('ping').ok\" | grep 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
-  interscity-kong:
-    <<: *interscity-amd64
-    image: kong:0.11.2
-    container_name: interscity-kong
-    environment:
-      - KONG_DATABASE=postgres
-      - KONG_PG_HOST=interscity-postgres
-      - KONG_PG_DATABASE=postgres
-      - KONG_PG_USER=postgres
-      - KONG_PG_PASSWORD=admin
-      - LC_CTYPE=en_US.UTF-8
-      - LC_ALL=en_US.UTF-8
-    command: bash -c "kong migrations up && kong start"
-    ports:
-      - "8000:8000"
-      - "8443:8443"
-      - "8001:8001"
-      - "7946:7946"
-      - "7946:7946/udp"
-    depends_on:
-      interscity-postgres:
-        condition: service_healthy
-    restart: unless-stopped
-
-  # InterSCity microservices.
-  interscity-resource-cataloguer:
-    <<: *interscity-amd64
-    container_name: interscity-resource-cataloguer
-    image: dylanguedes/resource-cataloguer:stable
-    ports:
-      - "3000:3000"
-    command: bash -c "bundle install && rake db:setup && bundle exec rails s -p 3000 -b 0.0.0.0"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin
-      POSTGRES_HOST: interscity-postgres
-      POSTGRES_PORT: 5432
-      DATACOLLECTOR_HOST: interscity-data-collector:3000
-      ACTUATORCONTROLLER_HOST: interscity-actuator-controller:3000
-      RABBITMQ_HOST: interscity-rabbitmq
-      KONG_URI: http://interscity-kong:8001
-      SELF_HOST: interscity-resource-cataloguer:3000
-      REGISTER_METHOD: target
-      REDIS_HOST: interscity-redis
-      REDIS_PORT: 6379
-    depends_on:
-      interscity-postgres:
-        condition: service_healthy
-      interscity-rabbitmq:
-        condition: service_healthy
-      interscity-redis:
-        condition: service_started
-      interscity-kong:
-        condition: service_started
-    restart: unless-stopped
-
-  interscity-resource-adaptor:
-    <<: *interscity-amd64
-    container_name: interscity-resource-adaptor
-    image: dylanguedes/resource-adaptor:stable
-    ports:
-      - "3002:3000"
-    command: bash -c "bundle install && rake db:setup && bundle exec rails s -p 3000 -b 0.0.0.0"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin
-      POSTGRES_HOST: interscity-postgres
-      POSTGRES_PORT: 5432
-      CATALOGUER_HOST: interscity-resource-cataloguer:3000
-      ADAPTOR_HOST: interscity-resource-adaptor:3000
-      RABBITMQ_HOST: interscity-rabbitmq
-      KONG_URI: http://interscity-kong:8001
-      SELF_HOST: interscity-resource-adaptor:3000
-      REGISTER_METHOD: target
-    depends_on:
-      interscity-postgres:
-        condition: service_healthy
-      interscity-rabbitmq:
-        condition: service_healthy
-      interscity-kong:
-        condition: service_started
-      interscity-resource-cataloguer:
-        condition: service_started
-    restart: unless-stopped
-
-  interscity-data-collector:
-    <<: *interscity-amd64
-    container_name: interscity-data-collector
-    image: dylanguedes/data-collector:stable
-    ports:
-      - "4000:3000"
-    command: bash -c "bundle install && rake db:mongoid:remove_indexes db:mongoid:create_indexes && bundle exec rails s -p 3000 -b 0.0.0.0"
-    environment:
-      MONGO_USER: admin
-      MONGO_PASSWORD: admin
-      MONGO_HOST: interscity-mongo
-      MONGO_PORT: 27017
-      MONGO_CACHE_HOST: interscity-mongo-cache
-      MONGO_CACHE_PORT: 27017
-      RABBITMQ_HOST: interscity-rabbitmq
-      KONG_URI: http://interscity-kong:8001
-      SELF_HOST: interscity-data-collector:3000
-      REGISTER_METHOD: target
-    depends_on:
-      interscity-mongo:
-        condition: service_healthy
-      interscity-mongo-cache:
-        condition: service_healthy
-      interscity-rabbitmq:
-        condition: service_healthy
-      interscity-kong:
-        condition: service_started
-    restart: unless-stopped
-
-  interscity-actuator-controller:
-    <<: *interscity-amd64
-    container_name: interscity-actuator-controller
-    image: dylanguedes/actuator-controller:stable
-    ports:
-      # Port 5000 is commonly reserved by macOS Control Center.
-      - "5001:3000"
-    command: bash -c "rake db:setup && bundle exec rails s -p 3000 -b 0.0.0.0"
-    environment:
-      MONGO_USER: admin
-      MONGO_PASSWORD: admin
-      MONGO_HOST: interscity-mongo
-      MONGO_PORT: 27017
-      MONGO_CACHE_HOST: interscity-mongo-cache
-      MONGO_CACHE_PORT: 27017
-      RABBITMQ_HOST: interscity-rabbitmq
-      KONG_URI: http://interscity-kong:8001
-      SELF_HOST: interscity-actuator-controller:3000
-      REGISTER_METHOD: target
-    depends_on:
-      interscity-mongo:
-        condition: service_healthy
-      interscity-mongo-cache:
-        condition: service_healthy
-      interscity-rabbitmq:
-        condition: service_healthy
-      interscity-kong:
-        condition: service_started
-    restart: unless-stopped
-
-  interscity-resource-discoverer:
-    <<: *interscity-amd64
-    container_name: interscity-resource-discoverer
-    image: dylanguedes/resource-discoverer:stable
-    ports:
-      - "3004:3000"
-    command: bash -c "bundle install && bundle exec rails s -p 3000 -b 0.0.0.0"
-    environment:
-      REDIS_HOST: interscity-redis:6379
-      DATACOLLECTOR_HOST: interscity-data-collector:3000
-      CATALOGUER_HOST: interscity-resource-cataloguer:3000
-      RABBITMQ_HOST: interscity-rabbitmq
-      KONG_URI: http://interscity-kong:8001
-      SELF_HOST: interscity-resource-discoverer:3000
-      REGISTER_METHOD: target
-    depends_on:
-      interscity-redis:
-        condition: service_started
-      interscity-rabbitmq:
-        condition: service_healthy
-      interscity-kong:
-        condition: service_started
-    restart: unless-stopped
-
-  # Local MQTT -> InterSCity REST bridge for AC IoT telemetry.
-  interscity:
-    build:
-      context: ./interscity
-    container_name: ac_iot_interscity
-    environment:
-      - MQTT_BROKER=mosquitto
-      - MQTT_PORT=1883
-      - MQTT_TOPIC=ac-iot/+/sensores
-      - INTERSCITY_BASE_URL=https://cidadesinteligentes.lsdi.ufma.br/interscity_lh
-      - INTERSCITY_SSL_VERIFY=false
-    depends_on:
-      mosquitto:
-        condition: service_healthy
-    restart: unless-stopped
+    profiles:
+      - nodered   # docker compose --profile nodered up -d
 
 volumes:
   mosquitto_data:
   mosquitto_log:
-  interscity_mongo_data:
-  interscity_postgres_data:

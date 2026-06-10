@@ -1,7 +1,0 @@
-Task mode: create
-Primary profile: engineering-platform
-Required proof objects: architecture flow, status table, Gantt summary, next-step roadmap.
-Source requirements: local docs/RELATORIO_TECNICO_ATUAL.md and docs/STATUS_IMPLEMENTACAO_GANTT_ATUAL.md.
-Brand constraints: no invented logos; use textual UFMA/AC-IoT cues only.
-QA gates: readable at 1280x720, <=10 slides, Gantt included as implementation summary.
-Known missing inputs: no official template supplied.

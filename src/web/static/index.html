@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AC-IoT · UFMA</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Cabeçalho ── -->
+  <header class="header">
+    <div>
+      <h1>AC-IoT <span class="accent">UFMA</span></h1>
+      <p class="subtitle">Monitoramento em tempo real · Sistemas Distribuídos</p>
+    </div>
+    <div class="header-right">
+      <div class="hcount">
+        <span id="stat-rooms">—</span>
+        <span class="hcount-lbl">salas monitoradas</span>
+      </div>
+      <div class="hstatus">
+        <div class="hst-item">
+          <span class="dot" id="dot-mqtt"></span>
+          <span id="lbl-mqtt" class="hst-lbl">MQTT</span>
+        </div>
+        <div class="hst-item">
+          <span class="dot" id="dot-ic"></span>
+          <span id="lbl-ic" class="hst-lbl">InterSCity</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Conteúdo principal ── -->
+  <div class="content">
+
+    <!-- Coluna esquerda: salas + painel de controle -->
+    <div class="main-col">
+
+      <!-- Grade de salas (apenas monitoramento) -->
+      <section class="room-grid" id="room-grid">
+        <div class="empty-state" id="empty-state">Aguardando dados MQTT…</div>
+      </section>
+
+      <!-- ── Setpoints de automação ── -->
+      <section class="panel sp-panel">
+        <div class="sp-bar">
+          <div class="sp-item">
+            <span class="sp-lbl">Setpoint AC</span>
+            <input class="sp-range" type="range" id="sp-temp" min="16" max="30" step="0.5" value="22"
+                   oninput="document.getElementById('sv-temp').textContent=this.value+'°C'">
+            <strong class="sp-val" id="sv-temp">22°C</strong>
+          </div>
+          <div class="sp-item">
+            <span class="sp-lbl">Setpoint umidade</span>
+            <input class="sp-range" type="range" id="sp-umid" min="30" max="90" step="1" value="55"
+                   oninput="document.getElementById('sv-umid').textContent=this.value+'%'">
+            <strong class="sp-val" id="sv-umid">55%</strong>
+          </div>
+          <div class="sp-item">
+            <span class="sp-lbl">Setpoint iluminação</span>
+            <input class="sp-range" type="range" id="sp-lux" min="0" max="1000" step="10" value="300"
+                   oninput="document.getElementById('sv-lux').textContent=this.value+' lx'">
+            <strong class="sp-val" id="sv-lux">300 lx</strong>
+          </div>
+          <div class="sp-actions">
+            <select id="sp-room" class="room-sel">
+              <option value="__all__">Todas as salas</option>
+            </select>
+            <button class="btn btn-blue" onclick="spApply()">Aplicar</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Painel do Operador ── -->
+      <section class="panel op-panel">
+
+        <div class="op-head">
+          <span class="op-title">Painel do Operador</span>
+          <select id="op-room" class="room-sel room-sel-sm">
+            <option value="">Escolha a sala</option>
+          </select>
+        </div>
+
+        <div class="op-body">
+
+          <!-- Coluna esquerda: sliders compactos -->
+          <div class="op-sliders-col">
+
+            <div class="op-sitem">
+              <div class="op-srow">
+                <span class="op-slbl">Temperatura AC</span>
+                <strong class="sp-val" id="op-tv">22°C</strong>
+              </div>
+              <input class="op-range" type="range" id="op-temp"
+                     min="16" max="30" step="0.5" value="22"
+                     oninput="document.getElementById('op-tv').textContent=this.value+'°C'">
+            </div>
+
+            <div class="op-sitem">
+              <div class="op-srow">
+                <span class="op-slbl">Iluminação</span>
+                <strong class="sp-val" id="op-lv">450 lx</strong>
+              </div>
+              <input class="op-range" type="range" id="op-lux"
+                     min="0" max="1000" step="10" value="450"
+                     oninput="document.getElementById('op-lv').textContent=this.value+' lx'">
+            </div>
+
+            <div class="op-sitem">
+              <div class="op-srow">
+                <span class="op-slbl">Umidade</span>
+                <strong class="sp-val" id="op-uv">55%</strong>
+              </div>
+              <input class="op-range" type="range" id="op-umid"
+                     min="30" max="90" step="1" value="55"
+                     oninput="document.getElementById('op-uv').textContent=this.value+'%'">
+            </div>
+
+          </div>
+
+          <!-- Coluna direita: opções + ações -->
+          <div class="op-opts-col">
+            <div class="op-togs">
+              <button class="tog tog-on" id="op-auto" onclick="this.classList.toggle('tog-on')">Automático</button>
+              <button class="tog tog-on" id="op-pres" onclick="this.classList.toggle('tog-on')">Detectar presença</button>
+              <button class="tog"        id="op-ac"   onclick="this.classList.toggle('tog-on')">AC ligado</button>
+              <button class="tog"        id="op-luz"  onclick="this.classList.toggle('tog-on')">Luz ligada</button>
+            </div>
+            <div class="op-btns">
+              <button class="btn btn-test" onclick="opSimular()">Simular leitura</button>
+              <button class="btn btn-blue" onclick="opApply()">Aplicar</button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Coluna direita: eventos (span das duas linhas) -->
+    <aside class="log-panel">
+      <div class="log-head">
+        <span class="log-title">Eventos</span>
+        <div class="log-tabs">
+          <button class="ltab active" id="tab-all"   onclick="filterLog('all')">Todos</button>
+          <button class="ltab"        id="tab-mqtt"  onclick="filterLog('mqtt')">MQTT</button>
+          <button class="ltab"        id="tab-ic"    onclick="filterLog('ic')">IC</button>
+          <button class="ltab"        id="tab-cmd"   onclick="filterLog('cmd')">Cmds</button>
+        </div>
+        <button class="lclear" onclick="clearLog()">Limpar</button>
+      </div>
+      <div class="log-feed" id="log-feed"></div>
+    </aside>
+
+  </div>
+
+  <footer class="footer">
+    <span>cidadesinteligentes.lsdi.ufma.br</span>
+    <span id="footer-time">—</span>
+  </footer>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>
