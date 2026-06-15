@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ac-iot-config
+  namespace: ac-iot
+data:
+  MQTT_PORT: "1883"
+  MQTT_WS_PORT: "8083"
+  ROOM_COUNT: "1000"
+  PUBLISH_INTERVAL: "30"
+  HTTP_WORKERS: "8"
+  MAX_INTERSCITY_RPS: "20"
+  QUEUE_MAX: "20000"
+  INTERSCITY_BASE_URL: "https://cidadesinteligentes.lsdi.ufma.br/interscity_lh"
+  INTERSCITY_SSL_VERIFY: "false"
+  INTERSCITY_REQUIRED: "false"
+  INTERSCITY_REGISTER_RESOURCES: "true"

@@ -1,13 +1,12 @@
-# AC-IoT SD UFMA — stack principal
+# AC-IoT SD UFMA — stack local de desenvolvimento
 # Plataforma InterSCity: cidadesinteligentes.lsdi.ufma.br (remota, não local)
-# Para adicionar salas: edite config/rooms.yaml — sem recompilar.
+# Produção/larga escala: use os manifests Kubernetes em k8s/.
 
 services:
 
   # ── Broker MQTT (TCP 1883 + WebSocket 9001) ────────────────────────────────
   mosquitto:
     image: eclipse-mosquitto:latest
-    container_name: ac_iot_mosquitto
     ports:
       - "1883:1883"   # MQTT TCP (simulator, bridge, Node-RED)
       - "9001:9001"   # MQTT WebSocket (dashboard browser)
@@ -26,13 +25,15 @@ services:
   simulator:
     build:
       context: ./src/simulator
-    container_name: ac_iot_simulator
     volumes:
       - ./config:/config:ro
     environment:
       - MQTT_BROKER=mosquitto
       - MQTT_PORT=1883
       - PUBLISH_INTERVAL=30       # segundos entre publicações
+      - ROOM_COUNT=1000           # escala alvo: 1 000 salas simultâneas
+      - SHARD_INDEX=0
+      - SHARD_COUNT=1
       - CONFIG_PATH=/config/rooms.yaml
     depends_on:
       mosquitto:
@@ -43,15 +44,20 @@ services:
   bridge:
     build:
       context: ./src/bridge
-    container_name: ac_iot_bridge
     volumes:
       - ./config:/config:ro
     environment:
       - MQTT_BROKER=mosquitto
       - MQTT_PORT=1883
-      - MQTT_TOPIC=ac-iot/+/sensores
+      - MQTT_TOPIC=$$share/bridge-workers/ac-iot/+/sensores
       - INTERSCITY_BASE_URL=https://cidadesinteligentes.lsdi.ufma.br/interscity_lh
       - INTERSCITY_SSL_VERIFY=false
+      - INTERSCITY_REQUIRED=false
+      - INTERSCITY_REGISTER_RESOURCES=true
+      - ROOM_COUNT=1000
+      - HTTP_WORKERS=8
+      - MAX_INTERSCITY_RPS=20
+      - QUEUE_MAX=20000
       - CONFIG_PATH=/config/rooms.yaml
     depends_on:
       mosquitto:
@@ -60,8 +66,8 @@ services:
 
   # ── Dashboard web em tempo real (Nginx serve static) ──────────────────────
   web:
-    image: nginx:alpine
-    container_name: ac_iot_web
+    build:
+      context: ./src/web
     ports:
       - "8080:80"     # Acesso: http://localhost:8080
     volumes:
@@ -77,7 +83,6 @@ services:
   # ── Node-RED (opcional — automações avançadas) ────────────────────────────
   nodered:
     image: nodered/node-red:latest
-    container_name: ac_iot_nodered
     ports:
       - "1880:1880"
     environment:
@@ -89,7 +94,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     profiles:
-      - nodered   # docker compose --profile nodered up -d
+      - nodered   # docker compose -f docker-compose.local.yml --profile nodered up -d
 
 volumes:
   mosquitto_data:

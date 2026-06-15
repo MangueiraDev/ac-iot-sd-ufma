@@ -24,7 +24,7 @@ Este documento registra o estado atual do projeto sem substituir o status/Gantt 
 
 | Etapa | Previsto | Status atual | Evidência | Falta |
 |---|---|---|---|---|
-| 01 | Ambiente Docker | Concluído | `docker-compose.yml` | Documentação final |
+| 01 | Ambiente Docker | Concluído | `docker-compose.local.yml` | Documentação final |
 | 02 | Broker MQTT | Concluído | Mosquitto `1883/9001` | Autenticação opcional |
 | 03 | Simular salas | Concluído | `src/simulator/main.cpp` | Expansão opcional |
 | 04 | Sensores MQTT | Concluído | `ac-iot/+/sensores` | Corrente/potência |

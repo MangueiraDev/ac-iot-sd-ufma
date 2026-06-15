@@ -28,14 +28,14 @@ ac-iot-sd-ufma/
 │   ├── mosquitto/config/     # mosquitto.conf (TCP 1883 + WS 9001)
 │   └── nodered/data/         # Flows Node-RED (perfil opcional)
 ├── docs/                     # Documentação
-├── docker-compose.yml
+├── docker-compose.local.yml
 └── .env.example
 ```
 
 ## Subir o sistema
 
 ```bash
-docker compose up -d --build
+docker compose -f docker-compose.local.yml up -d --build
 ```
 
 ## Acessos

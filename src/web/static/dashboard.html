@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AC-IoT UFMA · Dashboard do Sistema</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard-body">
+<div class="app dashboard-app">
+  <header class="topbar">
+    <div>
+      <h1>Dashboard do Sistema</h1>
+      <p>Metricas em tempo real de processamento, MQTT, operacao das salas e InterSCity</p>
+    </div>
+    <div class="top-status">
+      <a class="nav-link" href="index.html">Operacao</a>
+      <div class="status-pill"><span class="dot" id="dot-mqtt"></span><span id="lbl-mqtt">MQTT</span></div>
+      <div class="status-pill"><span class="dot" id="dot-ic"></span><span id="lbl-ic">InterSCity</span></div>
+      <div class="status-pill"><span id="footer-time">--:--:--</span></div>
+    </div>
+  </header>
+
+  <main class="dashboard-layout">
+    <section class="kpi-grid dashboard-kpis">
+      <div class="kpi"><span id="dash-processed">0</span><small>mensagens processadas</small></div>
+      <div class="kpi"><span id="dash-sensor-rx">0</span><small>sensores recebidos</small></div>
+      <div class="kpi"><span id="dash-command-rx">0</span><small>comandos enviados</small></div>
+      <div class="kpi"><span id="dash-rate">0/s</span><small>MQTT media 60s</small></div>
+      <div class="kpi"><span id="dash-traffic">0 KB</span><small>trafego MQTT observado</small></div>
+      <div class="kpi"><span id="dash-online">0</span><small>salas online</small></div>
+      <div class="kpi kpi-danger"><span id="dash-critical">0</span><small>temp. critica</small></div>
+      <div class="kpi kpi-ic"><span id="dash-ic-ok-rate">0%</span><small>sucesso bridge IC</small></div>
+    </section>
+
+    <section class="dashboard-grid">
+      <section class="panel chart-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Processamento MQTT</h2>
+            <span id="chart-msg-caption">media movel de 60 segundos</span>
+          </div>
+        </div>
+        <div class="chart-frame"><canvas id="chart-messages" class="metric-chart"></canvas></div>
+      </section>
+
+      <section class="panel chart-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Tráfego Observado</h2>
+            <span id="chart-traffic-caption">media movel de 60 segundos</span>
+          </div>
+        </div>
+        <div class="chart-frame"><canvas id="chart-traffic" class="metric-chart"></canvas></div>
+      </section>
+
+      <section class="panel chart-panel ic-panel">
+        <div class="panel-head">
+          <div>
+            <h2>InterSCity Real pela Bridge</h2>
+            <span id="ic-caption">aguardando metricas da bridge</span>
+          </div>
+        </div>
+        <div class="ic-metric-grid">
+          <div><span>Envios IC</span><strong id="ic-requests">0</strong></div>
+          <div><span>Sucesso</span><strong id="ic-success">0</strong></div>
+          <div><span>Falhas</span><strong id="ic-fail">0</strong></div>
+          <div><span>Latencia media</span><strong id="ic-latency">--</strong></div>
+          <div><span>Trafego IC real</span><strong id="ic-bytes">0 KB</strong></div>
+          <div><span>Ultimo status</span><strong id="ic-last">--</strong></div>
+        </div>
+        <div class="chart-frame compact-frame"><canvas id="chart-ic" class="metric-chart"></canvas></div>
+      </section>
+
+      <section class="panel chart-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Operacao das Salas</h2>
+            <span id="rooms-caption">presenca, AC, luz e temperatura critica</span>
+          </div>
+        </div>
+        <div class="chart-frame"><canvas id="chart-rooms" class="metric-chart"></canvas></div>
+      </section>
+    </section>
+
+    <section class="panel table-panel dashboard-events">
+      <div class="panel-head">
+        <div>
+          <h2>Eventos do Sistema</h2>
+          <span id="event-caption">eventos recentes de MQTT e InterSCity</span>
+        </div>
+        <button class="ghost" onclick="clearDashboardLog()">Limpar</button>
+      </div>
+      <div class="event-list" id="dash-log"></div>
+    </section>
+  </main>
+</div>
+<script src="dashboard.js"></script>
+</body>
+</html>

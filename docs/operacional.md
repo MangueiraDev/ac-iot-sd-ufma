@@ -1,44 +1,39 @@
 # AC-IoT SD UFMA — Sistema Operacional
 
-Visão geral, arquitetura e comandos para operar o sistema distribuído de monitoramento de salas com integração à plataforma InterSCity UFMA.
+Visão geral, arquitetura e comandos para operar o sistema de gerenciamento em larga escala de salas com integração em tempo real à plataforma InterSCity UFMA.
 
 ---
 
-## Arquitetura
+## Arquitetura atual
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  Docker Compose (host local / servidor UFMA)                    │
-│                                                                  │
-│  ┌─────────────┐   MQTT TCP    ┌──────────────┐                 │
-│  │  simulator  │──────1883────▶│  mosquitto   │                 │
-│  │   (C++)     │               │   (broker)   │                 │
-│  └─────────────┘               └──────┬───────┘                 │
-│                                       │ MQTT TCP                │
-│                                       ▼                         │
-│                               ┌──────────────┐   HTTPS REST     │
-│                               │    bridge    │─────────────────▶│ InterSCity UFMA
-│                               │    (C++)     │  cidadesinteli-  │ (remota)
-│                               └──────────────┘  gentes.lsdi.   │
-│                                       │          ufma.br        │
-│                               MQTT WS 9001                      │
-│                                       ▼                         │
-│                               ┌──────────────┐                  │
-│                               │     web      │◀── browser       │
-│                               │   (Nginx)    │    :8080         │
-│                               └──────────────┘                  │
-└─────────────────────────────────────────────────────────────────┘
+Kubernetes (producao / larga escala)
+
+simulator C++ StatefulSet x10 ──MQTT──▶ EMQX StatefulSet x3
+                                             │
+                                             ├── shared subscription
+                                             ▼
+                                  bridge C++ Deployment x4..30
+                                             │ HTTPS REST com rate limit
+                                             ▼
+                                  InterSCity UFMA / dedicado
+
+web Deployment x2..10 ──MQTT WebSocket──▶ EMQX
+                  └── /api/ic proxy ────▶ InterSCity
 ```
 
-### Serviços
+Docker Compose continua existindo apenas como modo local de desenvolvimento e
+validacao. Para escala real, use os manifests em `k8s/`.
 
-| Container         | Imagem                   | Função                                         | Porta       |
-|-------------------|--------------------------|------------------------------------------------|-------------|
-| ac_iot_mosquitto  | eclipse-mosquitto:latest | Broker MQTT (TCP + WebSocket)                  | 1883 / 9001 |
-| ac_iot_simulator  | ac-iot-sd-ufma-simulator | Simula sensores IoT das salas (C++)            | —           |
-| ac_iot_bridge     | ac-iot-sd-ufma-bridge    | Bridge MQTT → InterSCity UFMA (C++ async)      | —           |
-| ac_iot_web        | nginx:alpine             | Dashboard tempo real (HTML/JS → MQTT WebSocket) | 8080        |
-| ac_iot_nodered    | nodered/node-red:latest  | Automações Node-RED (perfil opcional)          | 1880        |
+### Componentes
+
+| Componente | Desenvolvimento | Kubernetes |
+|---|---|---|
+| Broker MQTT | Mosquitto | EMQX `StatefulSet` x3 |
+| Simulador | C++ com `ROOM_COUNT=1000` | C++ `StatefulSet` x10 com shards |
+| Bridge IC | C++ com pool HTTP | C++ `Deployment` x4..30 + HPA |
+| Web | Nginx local | `Deployment` x2..10 + Ingress |
+| InterSCity | UFMA remota | UFMA remota ou instancia dedicada |
 
 ### Código-fonte
 
@@ -57,10 +52,18 @@ src/
     main.cpp              ← entry point
     Dockerfile
   web/
+    Dockerfile
+    nginx.conf             ← Nginx + proxy /api/ic
     static/
-      index.html          ← dashboard principal
-      app.js              ← MQTT WebSocket + UI em tempo real
-      style.css           ← tema escuro profissional
+      index.html          ← cockpit operacional em escala
+      app.js              ← MQTT WebSocket + agregacao por blocos
+      style.css           ← UI densa para operacao
+k8s/
+  kustomization.yaml       ← entrada Kubernetes
+  emqx.yaml                ← cluster MQTT
+  simulator.yaml           ← shards C++
+  bridge.yaml              ← workers C++ + HPA
+  web.yaml                 ← cockpit web
 ```
 
 ### Tópicos MQTT
@@ -81,7 +84,7 @@ sala03 = 00000000-0000-4000-8000-000000000103
 
 ---
 
-## Reset total e inicialização
+## Modo local — desenvolvimento
 
 Execute na raiz do projeto:
 
@@ -89,25 +92,59 @@ Execute na raiz do projeto:
 cd /Users/mangueira/mangueira-dev/ac-iot-sd-ufma
 ```
 
-**Reset completo — remove containers, volumes, cache de build e imagens:**
+Subir broker, simulador de 1 000 salas e web:
 
 ```bash
-docker compose down -v --remove-orphans && \
-docker builder prune -af && \
-docker image prune -af && \
-docker compose up -d --build
+docker compose -f docker-compose.local.yml up -d --build mosquitto simulator web
 ```
 
-**Apenas reiniciar (sem rebuild):**
+Ativar envio ao InterSCity UFMA:
 
 ```bash
-docker compose restart && docker compose ps -a
+docker compose -f docker-compose.local.yml up -d --build bridge
 ```
 
-**Reiniciar e reconstruir só o bridge:**
+> O bridge registra/atualiza recursos e envia telemetria com `MAX_INTERSCITY_RPS=20`.
+> Use com cuidado contra a instancia UFMA compartilhada.
+
+Reset completo local:
 
 ```bash
-docker compose up -d --build bridge && docker compose logs -f bridge
+docker compose -f docker-compose.local.yml down -v --remove-orphans && \
+docker compose -f docker-compose.local.yml up -d --build mosquitto simulator web
+```
+
+---
+
+## Modo Kubernetes — larga escala
+
+Renderizar os manifests:
+
+```bash
+kubectl kustomize k8s
+```
+
+Aplicar no cluster:
+
+```bash
+kubectl apply -k k8s
+```
+
+Verificar pods:
+
+```bash
+kubectl -n ac-iot get pods -o wide
+kubectl -n ac-iot get hpa
+kubectl -n ac-iot get ingress
+```
+
+Escala esperada:
+
+```
+emqx         StatefulSet   3 pods
+simulator    StatefulSet  10 pods, 100 salas por pod
+bridge       Deployment    4 a 30 pods via HPA
+web          Deployment    2 a 10 pods via HPA
 ```
 
 ---
@@ -115,16 +152,16 @@ docker compose up -d --build bridge && docker compose logs -f bridge
 ## Verificar status dos containers
 
 ```bash
-docker compose ps -a
+docker compose -f docker-compose.local.yml ps -a
 ```
 
-Esperado — todos `Up` ou `healthy`:
+Esperado no modo local:
 
 ```
-ac_iot_mosquitto   healthy   0.0.0.0:1883->1883, 0.0.0.0:9001->9001
-ac_iot_simulator   running   —
-ac_iot_bridge      running   —
-ac_iot_web         healthy   0.0.0.0:8080->80
+mosquitto   healthy   0.0.0.0:1883->1883, 0.0.0.0:9001->9001
+simulator   running   ROOM_COUNT=1000
+web         healthy   0.0.0.0:8080->80
+bridge      running   apenas quando ativado
 ```
 
 ---
@@ -133,45 +170,43 @@ ac_iot_web         healthy   0.0.0.0:8080->80
 
 ### Mosquitto — confirmar broker MQTT
 
-Receber 3 mensagens das salas e sair automaticamente:
+Receber 1 000 mensagens retidas das salas e sair automaticamente:
 
 ```bash
-docker compose exec mosquitto mosquitto_sub -h localhost -t 'ac-iot/+/sensores' -C 3
+docker compose -f docker-compose.local.yml exec mosquitto mosquitto_sub -h localhost -t 'ac-iot/+/sensores' -C 1000 -W 15 | wc -l
 ```
+
+Esperado: `1000`
 
 ### Simulator — log ao vivo das publicações
 
 ```bash
-docker compose logs -f simulator
+docker compose -f docker-compose.local.yml logs -f simulator
 ```
 
 Esperado:
 
 ```
-[INFO] 3 sala(s) carregadas de /config/rooms.yaml
+[INFO] 1000 sala(s) carregada(s) room_count=1000 shard=0/1
 [INFO] Conectado ao broker. Publicando a cada 30s
 [PUB] sala01 temp=25.9°C umidade=48.1% luz=99lx presença=não
-[PUB] sala02 temp=26.7°C umidade=43.6% luz=337lx presença=não
-[PUB] sala03 temp=30.8°C umidade=56.6% luz=256lx presença=não
+[PUB] sala0100 temp=26.7°C umidade=43.6% luz=337lx presença=não
+[PUB] sala1000 temp=30.8°C umidade=56.6% luz=256lx presença=não
 ```
 
 ### Bridge — confirmar envio ao InterSCity
 
 ```bash
-docker compose logs -f bridge
+docker compose -f docker-compose.local.yml logs -f bridge
 ```
 
 Esperado:
 
 ```
 [INFO] InterSCity disponível: https://cidadesinteligentes.lsdi.ufma.br/...
-[REC]  Atualizado: sala01
-[REC]  Atualizado: sala02
-[REC]  Atualizado: sala03
+[INFO] Pipeline InterSCity: workers=8 queue_max=20000 max_rps=20
 [INFO] Bridge MQTT → InterSCity iniciado
-[OK]   Telemetria enviada: 00000000-0000-4000-8000-000000000101
-[OK]   Telemetria enviada: 00000000-0000-4000-8000-000000000102
-[OK]   Telemetria enviada: 00000000-0000-4000-8000-000000000103
+[OK] Worker #0 telemetria enviada: 00000000-0000-4000-8000-000000000101 total=1
 ```
 
 > `Ctrl+C` para sair dos logs.
@@ -191,21 +226,21 @@ Esperado: `HTTP 200`
 ### Recursos cadastrados no Cataloguer
 
 ```bash
-curl -k -s https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/catalog/resources | python3 -m json.tool | head -40
+curl -k -s https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/catalog/resources | jq . | head -40
 ```
 
 ### Última leitura de cada sala (Data Collector)
 
 ```bash
-curl -k -s https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/collector/resources/00000000-0000-4000-8000-000000000101/data/last | python3 -m json.tool
+curl -k -s https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/collector/resources/00000000-0000-4000-8000-000000000101/data/last | jq .
 ```
 
 ```bash
-curl -k -s https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/collector/resources/00000000-0000-4000-8000-000000000102/data/last | python3 -m json.tool
+curl -k -s https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/collector/resources/00000000-0000-4000-8000-000000000102/data/last | jq .
 ```
 
 ```bash
-curl -k -s https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/collector/resources/00000000-0000-4000-8000-000000000103/data/last | python3 -m json.tool
+curl -k -s https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/collector/resources/00000000-0000-4000-8000-000000000103/data/last | jq .
 ```
 
 ### Leitura manual ponta a ponta (MQTT → InterSCity)
@@ -213,22 +248,31 @@ curl -k -s https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/collector/reso
 Publica manualmente e confirma chegada no InterSCity:
 
 ```bash
-docker compose exec mosquitto mosquitto_pub \
+docker compose -f docker-compose.local.yml exec mosquitto mosquitto_pub \
   -h localhost -t 'ac-iot/sala01/sensores' \
   -m '{"id_sala":"sala01","temperatura":28.5,"umidade":62,"luminosidade":500,"presenca":true,"status_ac":"ligado","status_luz":"ligado","setpoint_ac":22.0,"setpoint_umidade":55.0,"setpoint_luz":300,"modo_ac":"ativo"}' && \
 sleep 4 && \
-curl -k -s https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/collector/resources/00000000-0000-4000-8000-000000000101/data/last | python3 -m json.tool | grep -A3 '"temperatura"'
+curl -k -s https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/collector/resources/00000000-0000-4000-8000-000000000101/data/last | jq . | grep -A3 '"temperatura"'
 ```
 
 ---
 
 ## Abrir interfaces web
 
-### Dashboard em tempo real (local)
+### Cockpit operacional em tempo real (local)
 
 ```bash
 open http://localhost:8080
 ```
+
+O painel exibe:
+
+- KPIs globais para 1 000 salas;
+- blocos operacionais agregados;
+- inventario vivo com todas as salas filtradas;
+- incidentes e eventos relevantes;
+- comando por todas as salas, bloco, filtro atual ou sala selecionada;
+- consulta InterSCity sob demanda por sala.
 
 ### Dashboard via rede (celular / outro computador)
 
@@ -246,7 +290,7 @@ open https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/collector/resources/
 ### Node-RED (opcional — só com `--profile nodered`)
 
 ```bash
-docker compose --profile nodered up -d && open http://localhost:1880
+docker compose -f docker-compose.local.yml --profile nodered up -d && open http://localhost:1880
 ```
 
 ---
@@ -254,7 +298,7 @@ docker compose --profile nodered up -d && open http://localhost:1880
 ## Monitorar todo o sistema ao vivo
 
 ```bash
-docker compose logs -f simulator bridge
+docker compose -f docker-compose.local.yml logs -f simulator bridge
 ```
 
 ---
@@ -275,7 +319,7 @@ rooms:
 Reiniciar para carregar:
 
 ```bash
-docker compose restart simulator bridge
+docker compose -f docker-compose.local.yml restart simulator bridge
 ```
 
 ---
@@ -285,19 +329,19 @@ docker compose restart simulator bridge
 **Build falha (dependência não encontrada):**
 
 ```bash
-docker compose build --no-cache simulator bridge
+docker compose -f docker-compose.local.yml build --no-cache simulator bridge
 ```
 
 **Bridge não envia telemetria:**
 
 ```bash
-docker compose logs bridge && docker compose restart bridge
+docker compose -f docker-compose.local.yml logs bridge && docker compose -f docker-compose.local.yml restart bridge
 ```
 
 **MQTT falhou no painel web (WebSocket 9001):**
 
 ```bash
-docker compose exec mosquitto mosquitto_sub -h localhost -t 'ac-iot/+/sensores' -C 1
+docker compose -f docker-compose.local.yml exec mosquitto mosquitto_sub -h localhost -t 'ac-iot/+/sensores' -C 1
 ```
 
 **InterSCity UFMA não responde:**
@@ -313,9 +357,9 @@ O bridge ainda não enviou telemetria para essa sala. Aguarde ou publique manual
 **Reset total quando nada resolver:**
 
 ```bash
-docker compose down -v --remove-orphans && \
+docker compose -f docker-compose.local.yml down -v --remove-orphans && \
 docker builder prune -af && \
 docker image prune -af && \
-docker compose up -d --build && \
-docker compose ps -a
+docker compose -f docker-compose.local.yml up -d --build && \
+docker compose -f docker-compose.local.yml ps -a
 ```

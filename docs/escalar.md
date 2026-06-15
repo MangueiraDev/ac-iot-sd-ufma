@@ -1,389 +1,265 @@
-# Escalar o AC-IoT para Larga Escala
+# Escalar o AC-IoT — Análise Crítica e Plano Real
 
-> Referência prática para transformar o sistema atual (3 salas, Docker local)
-> em uma infraestrutura distribuída com **1 000+ salas**, integração total com
-> a plataforma **InterSCity UFMA** e orquestração via **Kubernetes**.
+> Veredito baseado na leitura direta do código-fonte:
+> `src/bridge/pipeline.hpp`, `interscity.hpp`, `config.hpp`,
+> `src/simulator/main.cpp`, `simulation.hpp`.
 
 ---
 
-## Estado atual vs. estado alvo
+## O que o sistema JÁ faz (e o doc anterior subestimou)
 
-| Aspecto | Atual | Alvo (1 000+ salas) |
+Antes de listar o que falta, é honesto registrar o que já está implementado:
+
+| Recurso | Onde está no código | Nota |
 |---|---|---|
-| Salas | 3 (YAML local) | 1 000+ (registro dinâmico) |
-| Broker MQTT | 1 instância local | Cluster MQTT (EMQX / HiveMQ) |
-| Bridge → IC | 1 processo monolítico | N workers horizontais |
-| InterSCity | Projeto UFMA remoto | InterSCity próprio ou federado |
-| Orquestração | Docker Compose | Kubernetes |
-| Dashboard | Nginx + MQTT WS | Nginx/CDN + agregação por grupo |
-| Escalabilidade | Manual (`rooms.yaml`) | Auto-provisionamento via API IC |
+| Multi-worker HTTP para IC | `pipeline.hpp` — `HTTP_WORKERS` (padrão 8) | Workers paralelos consumindo a fila |
+| Fila com backpressure | `pipeline.hpp` — `QUEUE_MAX` (padrão 20 000) | Dropa com aviso, não trava o MQTT |
+| Rate limit para IC | `pipeline.hpp` — `MAX_INTERSCITY_RPS` (padrão 20 req/s) | Distribuído entre workers |
+| Retry com backoff | `interscity.hpp` — 3 tentativas, espera `attempt × 2 s` | Só para erros 5xx |
+| Modo degradado | `bridge/main.cpp` linha 88 | IC down no startup → continua consumindo MQTT |
+| Registro idempotente no IC | `interscity.hpp` — `ensure_capability`, `ensure_resource` | GET antes de POST, trata 422 |
+| Sharding do simulador | `simulator/main.cpp` — `SHARD_INDEX` / `SHARD_COUNT` | Lê índice do hostname K8s automaticamente |
+| Geração dinâmica de salas | `config.hpp` — `ROOM_COUNT` | Sem precisar de YAML; UUID determinístico |
+| UUID consistente | `config.hpp:room_uuid_for_index()` | Bridge e simulador compartilham a mesma fórmula |
+| Reconexão MQTT | `bridge/main.cpp` linha 117 | Exponential backoff nativo da libmosquitto |
+| Automação física real | `simulation.hpp` | Delays AC ligar/desligar, física de temperatura |
+
+O código é um **protótipo bem estruturado**, não um "Docker Compose ingênuo".
+Várias premissas do doc anterior estavam erradas.
 
 ---
 
-## 1. InterSCity — pré-requisitos
+## Veredito: o que funciona hoje (3 salas, Docker Compose)
 
-### 1.1 Registro em massa de recursos
-
-Com 1 000+ salas, o registro manual via YAML não escala.
-Crie um script de provisionamento que use a API REST do IC:
-
-```bash
-# Registrar recurso via API
-curl -X POST https://IC_HOST/catalog/resources \
-  -H "Content-Type: application/json" \
-  -d '{
-    "data": {
-      "description": "Sala 042 — Bloco D",
-      "capabilities": ["temperatura","umidade","luminosidade",
-                        "presenca","status_ac","status_luz",
-                        "setpoint_ac","setpoint_umidade","setpoint_luz","modo_ac"],
-      "lat": -2.5589, "lon": -44.3095
-    }
-  }'
-# Retorna uuid — salvar no banco de salas
+```
+Status atual: FUNCIONANDO — com uma dependência externa quebrada
 ```
 
-**Necessidade:** banco de dados (PostgreSQL) mapeando `sala_id → uuid_ic`.
-O simulador/bridge passa a consultar esse banco em vez do YAML.
+| Componente | Estado | Detalhe |
+|---|---|---|
+| Simulador C++ | ✅ OK | Publica telemetria MQTT a cada 30 s |
+| Broker Mosquitto | ✅ OK | TCP 1883 + WebSocket 9001 |
+| Bridge C++ | ✅ OK | Consome MQTT, tenta IC, modo degradado ativo |
+| Dashboard web | ✅ OK | Nginx saudável, MQTT WebSocket funcionando |
+| InterSCity UFMA | ❌ Fora do ar | `200.137.134.98:443` — timeout no SSL handshake |
 
-### 1.2 InterSCity próprio ou federado
-
-O servidor público `cidadesinteligentes.lsdi.ufma.br` é compartilhado e
-**não suportará** carga de 1 000 salas publicando a cada 30 s (~33 req/s só
-de telemetria). Opções:
-
-| Opção | Quando usar |
-|---|---|
-| Instância IC dedicada (Docker Compose) | Teste, projetos menores |
-| IC no Kubernetes UFMA | Produção acadêmica com SLA |
-| IC federado (múltiplas instâncias) | Multi-campus / multi-órgão |
-
-```bash
-# Clonar e subir IC localmente (para testes de carga)
-git clone https://github.com/smart-city-platform/smart_city_platform
-docker compose up -d
-```
+O sistema local funciona corretamente. O IC externo está inacessível.
 
 ---
 
-## 2. MQTT — cluster de alta disponibilidade
+## O que FALTA para escalar para 1 000+ salas
 
-Um único Mosquitto não suporta 1 000 sensores + dashboard + bridge sem degradação.
+Apenas 4 lacunas reais bloqueiam a escalabilidade:
 
-### Substituir por EMQX (compatível com Mosquitto, horizontalmente escalável)
+### 1. Shared subscriptions MQTT — crítico
+
+**Problema:** O bridge subscreve `ac-iot/+/sensores` com subscrição normal.
+Se você rodar 2 replicas do bridge, **ambas recebem todas as mensagens** → IC
+recebe telemetria duplicada.
+
+**Solução:** Trocar para shared subscription (MQTT 5 / EMQX):
+
+```bash
+# variável de ambiente no bridge
+MQTT_TOPIC=$share/bridge-workers/ac-iot/+/sensores
+```
+
+O broker distribui cada mensagem para apenas 1 worker do grupo.
+Mosquitto não suporta — requer **EMQX** ou HiveMQ.
 
 ```yaml
-# docker-compose (nó único EMQX para início)
+# docker-compose — trocar mosquitto por EMQX
 emqx:
   image: emqx/emqx:5
   ports:
-    - "1883:1883"    # MQTT TCP
-    - "8083:8083"    # MQTT WebSocket
-    - "18083:18083"  # Dashboard EMQX
-  environment:
-    EMQX_NAME: emqx@node1
-    EMQX_HOST: 127.0.0.1
+    - "1883:1883"
+    - "8083:8083"   # WebSocket (mesmo que Mosquitto 9001)
+    - "18083:18083" # dashboard admin
 ```
 
-Em Kubernetes, o EMQX StatefulSet forma cluster automaticamente — cada Pod
-conhece os outros via headless Service.
+### 2. Dashboard sem paginação — crítico acima de ~50 salas
 
-**Capacidade orientativa:**
-- 1 nó EMQX (2 vCPU / 4 GB): ~100 000 conexões simultâneas
-- Para 1 000 salas com publish a cada 30 s: bem dentro do limite de 1 nó
+**Problema:** O browser subscreve `ac-iot/+/sensores` e renderiza um card
+por sala. Com 1 000 salas isso trava o browser.
 
----
-
-## 3. Bridge — workers paralelos
-
-O bridge atual é um processo único que processa mensagens sequencialmente.
-Com muitas salas, a fila de telemetria acumula.
-
-### Estratégia: N workers via variável de ambiente
-
-```yaml
-# docker-compose (ou Deployment K8s)
-bridge:
-  build: ./src/bridge
-  replicas: 4          # ou scale via K8s HPA
-  environment:
-    MQTT_BROKER: emqx
-    INTERSCITY_BASE_URL: https://IC_HOST/interscity_lh
-    WORKER_ID: "{{.Task.Slot}}"   # diferencia instâncias no log
-```
-
-Cada worker subscreve `ac-iot/+/sensores` — o broker distribui as mensagens
-entre os consumers do mesmo grupo (MQTT shared subscriptions, suportado por
-EMQX):
-
-```
-MQTT_TOPIC=ac-iot/+/sensores
-MQTT_SHARE_GROUP=bridge-workers
-# → tópico efetivo: $share/bridge-workers/ac-iot/+/sensores
-```
-
----
-
-## 4. Kubernetes — topologia mínima
-
-```
-┌─────────────────────────────────────────────────────┐
-│  Kubernetes Cluster                                 │
-│                                                     │
-│  ┌──────────────┐   ┌──────────────────────────┐   │
-│  │ StatefulSet  │   │  Deployment              │   │
-│  │  EMQX x3    │   │  bridge workers x4       │   │
-│  │  (cluster)  │   │  (HPA: CPU > 60%)        │   │
-│  └──────────────┘   └──────────────────────────┘   │
-│                                                     │
-│  ┌──────────────┐   ┌──────────────────────────┐   │
-│  │ Deployment   │   │  Deployment              │   │
-│  │  simulator  │   │  web (nginx) x2          │   │
-│  │  (ou externo│   │  + Ingress               │   │
-│  └──────────────┘   └──────────────────────────┘   │
-│                                                     │
-│  ┌──────────────────────────────────────────────┐   │
-│  │  StatefulSet — InterSCity (IC)               │   │
-│  │  api-gateway · catalog · actuator-adaptor    │   │
-│  │  · resource-adaptor · data-collector         │   │
-│  │  + PostgreSQL / MongoDB                      │   │
-│  └──────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────┘
-```
-
-### Manifests mínimos
-
-```yaml
-# emqx-statefulset.yaml (trecho)
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: emqx
-spec:
-  replicas: 3
-  serviceName: emqx-headless
-  selector:
-    matchLabels: { app: emqx }
-  template:
-    spec:
-      containers:
-        - name: emqx
-          image: emqx/emqx:5
-          ports:
-            - { name: mqtt,    containerPort: 1883 }
-            - { name: mqttws,  containerPort: 8083 }
-          env:
-            - name: EMQX_CLUSTER__DISCOVERY_STRATEGY
-              value: k8s
-            - name: EMQX_CLUSTER__K8S__APISERVER
-              value: https://kubernetes.default.svc
-            - name: EMQX_CLUSTER__K8S__SERVICE_NAME
-              value: emqx-headless
-```
-
-```yaml
-# bridge-deployment.yaml (trecho)
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: bridge
-spec:
-  replicas: 4
-  template:
-    spec:
-      containers:
-        - name: bridge
-          image: ac-iot-bridge:latest
-          env:
-            - { name: MQTT_BROKER, value: emqx-headless }
-            - { name: MQTT_TOPIC,  value: "$share/bridge-workers/ac-iot/+/sensores" }
-            - { name: INTERSCITY_BASE_URL, value: http://ic-gateway/interscity_lh }
----
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: bridge-hpa
-spec:
-  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: bridge }
-  minReplicas: 2
-  maxReplicas: 20
-  metrics:
-    - type: Resource
-      resource: { name: cpu, target: { type: Utilization, averageUtilization: 60 } }
-```
-
-```yaml
-# web-deployment.yaml (trecho)
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: web
-spec:
-  replicas: 2
-  template:
-    spec:
-      containers:
-        - name: nginx
-          image: ac-iot-web:latest
-          ports: [{ containerPort: 80 }]
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: ac-iot-ingress
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "15"
-spec:
-  rules:
-    - host: aciot.ufma.br
-      http:
-        paths:
-          - path: /api/ic/
-            pathType: Prefix
-            backend: { service: { name: ic-gateway, port: { number: 80 } } }
-          - path: /
-            pathType: Prefix
-            backend: { service: { name: web, port: { number: 80 } } }
-```
-
----
-
-## 5. Dashboard — adaptações para grande volume
-
-Com 1 000 salas, renderizar todos os cards no browser é inviável.
-Mudanças necessárias no frontend:
-
-### 5.1 Agrupamento e paginação
+**Solução mínima em `app.js`:**
 
 ```javascript
-// app.js — filtrar salas visíveis
-const PAGE_SIZE = 20;
-let currentPage = 0;
-let filterText  = '';
+const PAGE = 20;
+let page = 0, filter = '';
 
 function visibleRooms() {
-  const ids = Object.keys(rooms)
-    .filter(id => id.includes(filterText))
-    .sort();
-  return ids.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
+  return Object.keys(rooms)
+    .filter(id => id.includes(filter))
+    .sort()
+    .slice(page * PAGE, (page + 1) * PAGE);
 }
 ```
 
-Adicionar no `index.html`:
-```html
-<input id="room-search" placeholder="Filtrar sala..." oninput="filterText=this.value;renderGrid()">
-<div class="pagination">
-  <button onclick="prevPage()">‹</button>
-  <span id="page-info"></span>
-  <button onclick="nextPage()">›</button>
-</div>
+Adicionar filtro e paginação no `index.html` antes de subir para mais de 50 salas.
+
+### 3. Autenticação MQTT — ausente
+
+**Problema:** Qualquer processo pode publicar nos tópicos das salas.
+Hoje `allow_anonymous true` no Mosquitto.
+
+**Solução mínima:**
+
+```bash
+# Gerar senha para o simulador
+docker exec ac_iot_mosquitto mosquitto_passwd -c /mosquitto/config/passwd simulator
 ```
 
-### 5.2 MQTT seletivo (não subscrever tudo)
-
-Ao invés de subscrever `ac-iot/+/sensores` (recebe todas as 1 000 salas),
-subscrever apenas as salas visíveis ou de interesse:
-
-```javascript
-// Subscrever só salas filtradas
-function subscribeVisible() {
-  visibleRooms().forEach(id => {
-    client.subscribe(`ac-iot/${id}/sensores`);
-  });
-}
-```
-
-### 5.3 Painel de setpoints — aplicar por grupo/bloco
-
-Adicionar campo de grupo no `rooms.yaml`:
-
-```yaml
-sala042:
-  uuid: "..."
-  grupo: "bloco-d"   # novo campo
-```
-
-No dashboard, o seletor de salas passa a ter opções:
-- Sala específica
-- Grupo/bloco
-- Todas as salas visíveis
-- **Broadcast total** (publicar no tópico `ac-iot/broadcast/comando`)
-
----
-
-## 6. Pontos críticos para produção
-
-### Autenticação MQTT
-
-Mosquitto/EMQX sem autenticação = qualquer dispositivo publica dados falsos.
-
-```yaml
+```ini
 # mosquitto.conf
 allow_anonymous false
 password_file /mosquitto/config/passwd
 ```
 
-Em K8s: Secret com credenciais por sala, rotação automática via Vault ou
-External Secrets Operator.
+### 4. Métricas internas não expostas
 
-### Rate limiting no bridge
+**Situação:** Os contadores `sent_`, `failed_`, `dropped_` já existem em
+`pipeline.hpp` mas só aparecem nos logs, não como endpoint HTTP.
 
-Evitar que 1 000 salas publiquem ao mesmo tempo e derrubem a API IC:
+**Impacto:** Sem Prometheus/Grafana, não há alerta automático quando o bridge
+começa a descartar mensagens (fila cheia) ou quando a taxa de erro IC sobe.
 
-```python
-# bridge — limitar a N req/s para IC
-import asyncio
-semaphore = asyncio.Semaphore(20)  # máx 20 req simultâneas ao IC
+**Solução mínima:** Adicionar um endpoint `/metrics` no bridge em formato
+simples (texto), ou exportar via MQTT tópico `ac-iot/_metrics/bridge`.
 
-async def post_telemetry(uuid, payload):
-    async with semaphore:
-        await http.post(f"{IC_BASE}/collector/resources/{uuid}/data", json=payload)
-```
+---
 
-### Persistência de setpoints
+## Como escalar para 1 000 salas HOJE (sem Kubernetes)
 
-Atualmente os setpoints existem só no browser (estado do slider).
-Com muitos operadores, é necessário persistir:
-- Redis para estado atual (TTL curto, acesso rápido)
-- PostgreSQL para histórico de comandos
-
-### Monitoramento do próprio sistema
+Com apenas Docker Compose, usando recursos já implementados:
 
 ```yaml
-# Adicionar ao docker-compose / K8s
-prometheus:
-  image: prom/prometheus
-grafana:
-  image: grafana/grafana
+# docker-compose.override.yml
+
+# Simulador particionado em 4 shards (250 salas cada)
+simulator-0:
+  build: ./src/simulator
+  environment:
+    ROOM_COUNT: "1000"
+    SHARD_INDEX: "0"
+    SHARD_COUNT: "4"
+
+simulator-1:
+  build: ./src/simulator
+  environment:
+    ROOM_COUNT: "1000"
+    SHARD_INDEX: "1"
+    SHARD_COUNT: "4"
+
+simulator-2:
+  build: ./src/simulator
+  environment:
+    ROOM_COUNT: "1000"
+    SHARD_INDEX: "2"
+    SHARD_COUNT: "4"
+
+simulator-3:
+  build: ./src/simulator
+  environment:
+    ROOM_COUNT: "1000"
+    SHARD_INDEX: "3"
+    SHARD_COUNT: "4"
+
+# Bridge: 1 instância (sem shared sub ainda = não replicar)
+bridge:
+  build: ./src/bridge
+  environment:
+    ROOM_COUNT: "1000"
+    HTTP_WORKERS: "16"
+    MAX_INTERSCITY_RPS: "50"
+    QUEUE_MAX: "50000"
 ```
 
-Métricas essenciais:
-- Taxa de telemetria enviada ao IC (req/s, erros)
-- Mensagens MQTT processadas por segundo
-- Latência bridge → IC por sala
-- Número de salas ativas (heartbeat < 60 s)
+Carga estimada com 1 000 salas a cada 30 s:
+- **~33 msg/s MQTT** — tranquilo para Mosquitto
+- **~33 req/s para IC** — controlado pelo `MAX_INTERSCITY_RPS`
+- **Fila bridge máxima:** 50 000 itens ≈ 25 min de acumulação sem IC
+
+Esse cenário funciona hoje, **exceto pelo IC estar fora do ar**.
 
 ---
 
-## 7. Checklist de migração
+## Quando Kubernetes é necessário de verdade
 
-- [ ] Banco de dados de salas (PostgreSQL) com `sala_id → uuid_ic`
-- [ ] Script de provisionamento em massa no IC
-- [ ] Substituir Mosquitto por EMQX
-- [ ] Bridge: shared subscriptions + múltiplos workers
-- [ ] Autenticação MQTT por sala (certificado ou user/pass)
-- [ ] InterSCity próprio (instância dedicada ou K8s)
-- [ ] Manifests Kubernetes (StatefulSet EMQX, Deployment bridge/web, HPA)
-- [ ] Dashboard: paginação + filtro por sala/grupo
-- [ ] Rate limiting no bridge (semáforo async)
-- [ ] Prometheus + Grafana para observabilidade
-- [ ] Testes de carga antes de produção (`mqttx bench`)
+Kubernetes traz valor real quando:
+
+1. Você precisa de **2+ replicas do bridge** sem duplicar telemetria
+   (depende de shared subscriptions no EMQX)
+2. O **IC precisa de alta disponibilidade** (StatefulSet com réplicas)
+3. Você quer **HPA** para o bridge escalar com carga automaticamente
+4. O sistema precisa sobreviver a falha de nó físico
+
+Para projetos acadêmicos com SLA relaxado, Docker Compose em 1 VM com
+EMQX + bridge único cobre bem até ~5 000 salas com os ajustes acima.
 
 ---
 
-## Referências
+## Topologia K8s mínima (quando chegar lá)
 
-- EMQX K8s Operator: `github.com/emqx/emqx-operator`
-- InterSCity platform: `github.com/smart-city-platform/smart_city_platform`
-- MQTT shared subscriptions (MQTT 5): `docs.emqx.com/shared-subscriptions`
-- `cidadesinteligentes.lsdi.ufma.br` — instância UFMA (compartilhada, uso acadêmico)
+```
+Ingress (TLS)
+    ├── /           → Deployment: web (nginx) x2
+    ├── /api/ic/    → Service: ic-gateway
+    └── /ws         → Service: emqx (porta 8083)
+
+StatefulSet: emqx x3 (cluster automático via K8s discovery)
+
+Deployment: bridge x4
+    HPA: CPU > 60% → até 20 replicas
+    env: MQTT_TOPIC=$share/bridge-workers/ac-iot/+/sensores
+    env: ROOM_COUNT=1000
+
+StatefulSet: simulator x4 (pods 0..3)
+    env: ROOM_COUNT=1000
+    env: SHARD_COUNT=4
+    env: SHARD_INDEX=<auto via hostname>  ← já implementado
+
+StatefulSet: InterSCity (api-gateway, catalog, adaptor, data-collector)
+    + PostgreSQL / MongoDB
+```
+
+---
+
+## Checklist de migração por prioridade
+
+**Curto prazo (implementar antes de apresentação com muitas salas):**
+- [ ] Adicionar paginação e filtro no dashboard (`app.js` + `index.html`)
+- [ ] Habilitar autenticação MQTT no Mosquitto
+
+**Médio prazo (para escalar a bridge):**
+- [ ] Trocar Mosquitto por EMQX (compatível com Paho/Mosquitto clients)
+- [ ] Atualizar `MQTT_TOPIC` no bridge para shared subscription
+- [ ] Testar com `ROOM_COUNT=100` → `ROOM_COUNT=500` → `ROOM_COUNT=1000`
+
+**Longo prazo (produção / K8s):**
+- [ ] Manifests Kubernetes (StatefulSet EMQX, Deployment bridge com HPA)
+- [ ] Endpoint `/metrics` no bridge (Prometheus)
+- [ ] InterSCity em instância dedicada
+- [ ] Credenciais MQTT por sala (Secret K8s)
+
+---
+
+## Integração InterSCity — estado e o que falta
+
+**O que já funciona (quando IC está acessível):**
+- Registro automático de capabilities e resources no startup
+- Telemetria no formato correto: `{data:{cap:[{value, timestamp}]}}`
+- Retry 3× com backoff em erros 5xx
+- Modo degradado: IC down não para o sistema
+
+**O que falta para produção com IC:**
+- IC próprio (o servidor UFMA é compartilhado e tem SLA desconhecido)
+- Reenvio de telemetria perdida durante downtime (fila persistente)
+- Verificação periódica se o recurso ainda está registrado
+
+**Estado atual do servidor UFMA:**
+```
+cidadesinteligentes.lsdi.ufma.br (200.137.134.98:443)
+→ Timeout no SSL handshake — servidor inacessível
+→ Contatar equipe LSDi/UFMA para verificar status
+```

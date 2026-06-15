@@ -23,6 +23,15 @@ namespace ic_detail {
 
 struct Response { int status = 0; std::string body; };
 
+struct TelemetryResult {
+    bool ok = false;
+    int status = 0;
+    int attempts = 0;
+    unsigned long long request_bytes = 0;
+    unsigned long long response_bytes = 0;
+    unsigned long long latency_ms = 0;
+};
+
 static size_t write_cb(char* ptr, size_t sz, size_t n, void* ud) {
     static_cast<std::string*>(ud)->append(ptr, sz * n);
     return sz * n;
@@ -117,7 +126,7 @@ public:
         auto r = get(catalog_ + "/capabilities/" + cap.name);
         if (r.status == 200) return; // já existe
 
-        json body{{"name", cap.name}, {"description", cap.description}, {"capability_type", "sensor"}};
+        json body{{"name", cap.name}, {"description", cap.description}, {"capability_type", cap.type}};
         auto pr = post(catalog_ + "/capabilities", body);
         if (pr.status == 201 || pr.status == 200) {
             std::cout << "[CAP] Registrada: " << cap.name << "\n";
@@ -142,8 +151,10 @@ public:
         std::string url = catalog_ + "/resources/" + room.uuid;
         auto gr = get(url);
         if (gr.status == 200) {
-            put(url, body); // atualiza se já existe
-            std::cout << "[REC] Atualizado: " << id << "\n";
+            if (env_flag(getenv_or("INTERSCITY_UPDATE_RESOURCES", "false"))) {
+                put(url, body);
+                std::cout << "[REC] Atualizado: " << id << "\n";
+            }
         } else {
             auto cr = post(catalog_ + "/resources", body);
             if (cr.status == 201 || cr.status == 200) {
@@ -157,7 +168,8 @@ public:
     }
 
     // Envia telemetria de uma sala para o InterSCity Adaptor (até 3 tentativas)
-    bool send_telemetry(const std::string& uuid, const json& data) const {
+    ic_detail::TelemetryResult send_telemetry_result(const std::string& uuid, const json& data) const {
+        const auto started = std::chrono::steady_clock::now();
         const std::string ts = ic_detail::iso8601_now();
         json payload{{"data", json::object()}};
         for (const auto& [key, val] : data.items()) {
@@ -165,19 +177,34 @@ public:
                 payload["data"][key] = json::array({{{"value", val}, {"timestamp", ts}}});
         }
 
+        ic_detail::TelemetryResult result;
+        result.request_bytes = payload.dump().size();
         std::string url = adaptor_ + "/resources/" + uuid + "/data";
         for (int attempt = 1; attempt <= 3; ++attempt) {
+            result.attempts = attempt;
             auto r = post(url, payload);
-            if (r.status >= 200 && r.status < 300) return true;
-            if (r.status < 500) {               // erro de cliente — não retenta
+            result.status = r.status;
+            result.response_bytes += r.body.size();
+            if (r.status >= 200 && r.status < 300) {
+                result.ok = true;
+                break;
+            }
+            if (r.status != 0 && r.status < 500) { // erro de cliente — não retenta
                 std::cerr << "[WARN] Telemetria rejeitada (status=" << r.status << ")\n";
-                return false;
+                break;
             }
             std::cerr << "[WARN] Telemetria falhou (tentativa " << attempt
                       << "/3, status=" << r.status << ")\n";
             std::this_thread::sleep_for(std::chrono::seconds(attempt * 2));
         }
-        return false;
+        result.latency_ms = static_cast<unsigned long long>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - started).count());
+        return result;
+    }
+
+    bool send_telemetry(const std::string& uuid, const json& data) const {
+        return send_telemetry_result(uuid, data).ok;
     }
 
 private:

@@ -1,536 +1,680 @@
 'use strict';
 
-// ── Config ────────────────────────────────────────────────────────────────────
-const MQTT_HOST  = window.location.hostname;
-const MQTT_PORT  = 9001;
+const MQTT_HOST = window.location.hostname;
+const MQTT_PORT = window.location.port
+  ? parseInt(window.location.port, 10)
+  : (window.location.protocol === 'https:' ? 443 : 80);
+const MQTT_PATH = '/mqtt';
 const MQTT_TOPIC = 'ac-iot/+/sensores';
+const DEFAULT_ZONE_SIZE = 25;
+const OFFLINE_AFTER_MS = 70000;
+const CRITICAL_TEMP_FACTOR = 1.3;
+const HIGH_AC_SETPOINT = 26;
 
-const ROOM_UUIDS = {
-  sala01: '00000000-0000-4000-8000-000000000101',
-  sala02: '00000000-0000-4000-8000-000000000102',
-  sala03: '00000000-0000-4000-8000-000000000103',
-};
-
-// ── Estado ────────────────────────────────────────────────────────────────────
-const rooms    = {};       // último payload MQTT por sala
-const icData   = {};       // última resposta IC parseada por sala
-const icTimers = {};       // debounce timers IC
-
-let client         = null;
-let reconnectTimer = null;
-let icEverOk       = false;
-
-// (seleção de sala via <select> — sem Sets)
-
-// ── Log ───────────────────────────────────────────────────────────────────────
-const LOG_MAX  = 120;
+const rooms = {};
+const icData = {};
 const logItems = [];
-let   logFilter = 'all';
+
+let client = null;
+let reconnectTimer = null;
+let renderTimer = null;
+let roomFilter = '';
+let statusFilter = 'all';
+let zoneSize = DEFAULT_ZONE_SIZE;
+let selectedZone = null;
+let selectedRoom = null;
+let icEverOk = false;
+let lastIcOk = false;
+let received = 0;
+let lastMqttAt = 0;
+
+class MqttWsClient {
+  constructor(url, clientId) {
+    this.url = url;
+    this.clientId = clientId;
+    this.ws = null;
+    this.packetId = 1;
+    this.onConnectionLost = null;
+    this.onMessageArrived = null;
+    this.keepAliveTimer = null;
+  }
+
+  isConnected() {
+    return this.ws?.readyState === WebSocket.OPEN;
+  }
+
+  connect(opts) {
+    this.ws = new WebSocket(this.url, 'mqtt');
+    this.ws.binaryType = 'arraybuffer';
+    this.ws.onopen = () => this.ws.send(this.connectPacket());
+    this.ws.onerror = () => opts.onFailure?.({ errorMessage: 'WebSocket MQTT falhou' });
+    this.ws.onclose = () => {
+      clearInterval(this.keepAliveTimer);
+      this.onConnectionLost?.({ errorCode: 1, errorMessage: 'conexao fechada' });
+    };
+    this.ws.onmessage = (ev) => {
+      const bytes = new Uint8Array(ev.data);
+      const type = bytes[0] >> 4;
+      if (type === 2) {
+        this.keepAliveTimer = setInterval(() => this.ping(), 25000);
+        opts.onSuccess?.();
+      } else if (type === 3) {
+        const msg = this.parsePublish(bytes);
+        if (msg) this.onMessageArrived?.(msg);
+      }
+    };
+  }
+
+  subscribe(topic) {
+    this.ws.send(this.subscribePacket(topic));
+  }
+
+  sendMessage(topic, payload) {
+    this.ws.send(this.publishPacket(topic, payload));
+  }
+
+  ping() {
+    if (this.isConnected()) this.ws.send(new Uint8Array([0xc0, 0x00]));
+  }
+
+  encodeString(value) {
+    const enc = new TextEncoder().encode(value);
+    return [enc.length >> 8, enc.length & 255, ...enc];
+  }
+
+  encodeLength(len) {
+    const out = [];
+    do {
+      let digit = len % 128;
+      len = Math.floor(len / 128);
+      if (len > 0) digit |= 128;
+      out.push(digit);
+    } while (len > 0);
+    return out;
+  }
+
+  connectPacket() {
+    const vh = [...this.encodeString('MQTT'), 4, 2, 0, 30];
+    const payload = this.encodeString(this.clientId);
+    const rem = [...vh, ...payload];
+    return new Uint8Array([0x10, ...this.encodeLength(rem.length), ...rem]);
+  }
+
+  subscribePacket(topic) {
+    const id = this.packetId++ & 0xffff;
+    const payload = [...this.encodeString(topic), 0];
+    const rem = [id >> 8, id & 255, ...payload];
+    return new Uint8Array([0x82, ...this.encodeLength(rem.length), ...rem]);
+  }
+
+  publishPacket(topic, payload) {
+    const body = new TextEncoder().encode(payload);
+    const rem = [...this.encodeString(topic), ...body];
+    return new Uint8Array([0x30, ...this.encodeLength(rem.length), ...rem]);
+  }
+
+  parsePublish(bytes) {
+    let mul = 1, len = 0, pos = 1, digit;
+    do {
+      digit = bytes[pos++];
+      len += (digit & 127) * mul;
+      mul *= 128;
+    } while (digit & 128);
+    const topicLen = (bytes[pos] << 8) + bytes[pos + 1];
+    pos += 2;
+    const topic = new TextDecoder().decode(bytes.slice(pos, pos + topicLen));
+    pos += topicLen;
+    const payload = new TextDecoder().decode(bytes.slice(pos, 1 + this.encodeLength(len).length + len));
+    return { destinationName: topic, payloadString: payload };
+  }
+}
+
+function roomIndex(roomId) {
+  const m = String(roomId).match(/(\d+)/);
+  return m ? parseInt(m[1], 10) : 0;
+}
+
+function roomLabel(roomId) {
+  const idx = roomIndex(roomId);
+  return idx ? `Sala ${String(idx).padStart(4, '0')}` : roomId;
+}
+
+function roomUuid(roomId) {
+  const idx = roomIndex(roomId);
+  if (!idx) return null;
+  return '00000000-0000-4000-8000-' + String(100 + idx).padStart(12, '0');
+}
+
+function icCaps(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  if (Array.isArray(raw.resources) && raw.resources[0]?.capabilities) return raw.resources[0].capabilities;
+  if (raw.data?.capabilities) return raw.data.capabilities;
+  if (Array.isArray(raw.data) && raw.data[0]?.capabilities) return raw.data[0].capabilities;
+  return raw.capabilities || raw.data || raw;
+}
+
+function icValue(caps, name) {
+  const value = caps?.[name];
+  if (Array.isArray(value)) return value[0]?.value ?? '--';
+  if (value && typeof value === 'object' && 'value' in value) return value.value;
+  return value ?? '--';
+}
+
+function icSummary(raw) {
+  const caps = icCaps(raw);
+  if (!caps) return '<div class="empty-detail">InterSCity sem dados normalizados para esta sala.</div>';
+  return `<div class="ic-grid">
+    <div><span>Temperatura</span><strong>${icValue(caps, 'temperatura')}</strong></div>
+    <div><span>Umidade</span><strong>${icValue(caps, 'umidade')}</strong></div>
+    <div><span>Luminosidade</span><strong>${icValue(caps, 'luminosidade')}</strong></div>
+    <div><span>Presenca</span><strong>${icValue(caps, 'presenca')}</strong></div>
+    <div><span>AC</span><strong>${icValue(caps, 'status_ac')}</strong></div>
+    <div><span>Luz</span><strong>${icValue(caps, 'status_luz')}</strong></div>
+  </div>`;
+}
+
+function seedInventory(count = 1000) {
+  for (let i = 1; i <= count; i++) {
+    const id = i <= 99 ? `sala${String(i).padStart(2, '0')}` : `sala${String(i).padStart(4, '0')}`;
+    rooms[id] = rooms[id] || {
+      id_sala: id,
+      temperatura: null,
+      umidade: null,
+      luminosidade: null,
+      presenca: false,
+      status_ac: 'desconhecido',
+      status_luz: 'desconhecido',
+      modo_ac: 'desconhecido',
+      _seenAt: 0,
+    };
+  }
+}
+
+function zoneOf(roomId) {
+  const idx = roomIndex(roomId);
+  if (!idx) return 'sem-bloco';
+  return `B${String(Math.ceil(idx / zoneSize)).padStart(2, '0')}`;
+}
+
+function sortedRoomIds() {
+  return Object.keys(rooms).sort((a, b) => roomIndex(a) - roomIndex(b));
+}
+
+function isOffline(room) {
+  return !room?._seenAt || Date.now() - room._seenAt > OFFLINE_AFTER_MS;
+}
+
+function isAlert(room) {
+  if (!room) return false;
+  return isOffline(room) || isCriticalTemp(room) || room.umidade >= 75 || room.luminosidade < 20;
+}
+
+function isCriticalTemp(room) {
+  if (!room?.presenca) return false;
+  if (typeof room.temperatura !== 'number' || typeof room.setpoint_ac !== 'number') return false;
+  const acOff = room.status_ac !== 'ligado';
+  const highSetpoint = room.setpoint_ac >= HIGH_AC_SETPOINT;
+  return room.temperatura >= room.setpoint_ac * CRITICAL_TEMP_FACTOR && (acOff || highSetpoint);
+}
+
+function criticalRoomIds() {
+  return sortedRoomIds().filter(id => isCriticalTemp(rooms[id]));
+}
+
+function filteredRoomIds() {
+  const q = roomFilter.trim().toLowerCase();
+  return sortedRoomIds().filter(id => {
+    const room = rooms[id];
+    const zone = zoneOf(id).toLowerCase();
+    const matchesText = !q || id.toLowerCase().includes(q) || roomLabel(id).toLowerCase().includes(q) || zone.includes(q);
+    if (!matchesText) return false;
+    if (statusFilter === 'alert') return isAlert(room);
+    if (statusFilter === 'critical-temp') return isCriticalTemp(room);
+    if (statusFilter === 'online') return !isOffline(room);
+    if (statusFilter === 'offline') return isOffline(room);
+    if (statusFilter === 'presence') return !!room.presenca;
+    return true;
+  });
+}
+
+function fmtNum(v, dec = 1, suffix = '') {
+  return typeof v === 'number' ? `${v.toFixed(dec)}${suffix}` : '--';
+}
+
+function fmtHeartbeat(room) {
+  if (!room?._seenAt) return '--';
+  const age = Math.floor((Date.now() - room._seenAt) / 1000);
+  return age < 2 ? 'agora' : `${age}s`;
+}
 
 function addLog(type, msg) {
-  logItems.unshift({ ts: new Date().toLocaleTimeString('pt-BR'), type, msg });
-  if (logItems.length > LOG_MAX) logItems.pop();
+  logItems.unshift({ type, msg, ts: new Date().toLocaleTimeString('pt-BR') });
+  if (logItems.length > 180) logItems.pop();
   renderLog();
 }
 
 function renderLog() {
   const feed = document.getElementById('log-feed');
-  const shown = logFilter === 'all'
-    ? logItems
-    : logItems.filter(e =>
-        e.type === logFilter ||
-        (logFilter !== 'cmd' && (e.type === 'ok' || e.type === 'warn'))
-      );
-
-  feed.innerHTML = shown.map(e =>
-    `<div class="log-entry log-${e.type}">
-       <span class="log-ts">${e.ts}</span>
-       <span class="log-msg">${e.msg}</span>
-     </div>`
+  if (!feed) return;
+  feed.innerHTML = logItems.slice(0, 80).map(e =>
+    `<div class="event event-${e.type}">
+      <span>${e.ts}</span>
+      <strong>${e.msg}</strong>
+    </div>`
   ).join('');
 }
 
-window.clearLog  = () => { logItems.length = 0; renderLog(); };
-window.filterLog = (f) => {
-  logFilter = f;
-  document.querySelectorAll('.ltab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-' + f)?.classList.add('active');
+window.clearLog = () => {
+  logItems.length = 0;
   renderLog();
 };
 
-// ── InterSCity — normaliza todos os formatos conhecidos ───────────────────────
-//
-// Retorna { cap: [{value, date|timestamp}] } independente do formato de origem.
-//
-function normalizeIC(raw) {
-  if (!raw || typeof raw !== 'object') return null;
+function setMQTT(ok) {
+  document.getElementById('dot-mqtt').className = 'dot ' + (ok ? 'ok' : 'err');
+  document.getElementById('lbl-mqtt').textContent = ok ? 'MQTT ao vivo' : 'MQTT off';
+}
 
-  // Formato UFMA confirmado: {resources:[{uuid, capabilities:{cap:[{value,date}]}}]}
-  if (Array.isArray(raw.resources) && raw.resources.length > 0) {
-    const caps = raw.resources[0]?.capabilities;
-    if (caps && typeof caps === 'object') return caps;
-  }
-
-  // Formato A: {data: {capabilities: {cap: [{value, date}] | number}}}
-  if (raw.data?.capabilities && typeof raw.data.capabilities === 'object') {
-    return raw.data.capabilities;
-  }
-
-  // Formato B: {data: [{uuid, capabilities:{cap:val}, timestamp}]}
-  if (Array.isArray(raw.data) && raw.data.length > 0 && raw.data[0].capabilities) {
-    const first = raw.data[0];
-    const ts    = first.timestamp || first.date || null;
-    const out   = {};
-    for (const [k, v] of Object.entries(first.capabilities)) {
-      if (Array.isArray(v) && v.length) out[k] = v;
-      else if (typeof v === 'number')   out[k] = [{ value: v, date: ts }];
-    }
-    return Object.keys(out).length ? out : null;
-  }
-
-  // Formato C: {data: [{capability, value, date}]}
-  if (Array.isArray(raw.data) && raw.data.length > 0 && raw.data[0].capability != null) {
-    const out = {};
-    for (const item of raw.data) {
-      const cap = item.capability || item.name;
-      if (cap && item.value != null)
-        out[cap] = [{ value: item.value, date: item.date || item.timestamp }];
-    }
-    return Object.keys(out).length ? out : null;
-  }
-
-  // Formato D: {data: {cap: [{value, date}]}} ou {data: {cap: number}}
-  if (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data)) {
-    const inner = raw.data;
-    const ts    = inner.timestamp || inner.date || null;
-    const skip  = new Set(['timestamp', 'date', 'uuid', 'resource_uuid', 'id', 'status']);
-    const out   = {};
-    for (const [k, v] of Object.entries(inner)) {
-      if (skip.has(k)) continue;
-      if (Array.isArray(v) && v.length && v[0].value != null) out[k] = v;
-      else if (typeof v === 'number') out[k] = [{ value: v, date: ts }];
-    }
-    return Object.keys(out).length ? out : null;
-  }
-
-  // Formato E: plano {cap: value, date/timestamp: "..."} no root
-  {
-    const ts   = raw.timestamp || raw.date || null;
-    const skip = new Set(['timestamp', 'date', 'uuid', 'data', 'id', 'resources']);
-    const out  = {};
-    for (const [k, v] of Object.entries(raw)) {
-      if (skip.has(k)) continue;
-      if (typeof v === 'number') out[k] = [{ value: v, date: ts }];
-    }
-    return Object.keys(out).length ? out : null;
+function refreshMqttStatus() {
+  const live = lastMqttAt && Date.now() - lastMqttAt < OFFLINE_AFTER_MS;
+  if (live) {
+    document.getElementById('dot-mqtt').className = 'dot ok';
+    document.getElementById('lbl-mqtt').textContent = `MQTT ao vivo · ${received}`;
   }
 }
 
-function icGet(d, cap) {
-  const arr = d?.[cap];
-  if (!arr) return null;
-  if (Array.isArray(arr) && arr.length) return arr[0]?.value ?? null;
-  if (typeof arr === 'number') return arr;
-  return null;
-}
-
-function icGetTs(d, cap) {
-  const arr = d?.[cap];
-  if (Array.isArray(arr) && arr.length) return arr[0]?.date ?? arr[0]?.timestamp ?? null;
-  return null;
-}
-
-function fmtIcTs(ts) {
-  if (!ts) return '—';
-  try {
-    return new Date(ts).toLocaleString('pt-BR', {
-      day: '2-digit', month: '2-digit',
-      hour: '2-digit', minute: '2-digit',
-    });
-  } catch { return String(ts); }
-}
-
-// ── IC status visual ──────────────────────────────────────────────────────────
 function setICStatus(ok) {
+  lastIcOk = ok;
   const dot = document.getElementById('dot-ic');
-  const lbl = document.getElementById('lbl-ic');
-  if (!dot) return;
-  if (ok) {
-    dot.className = 'dot ok';
-    lbl.textContent = 'InterSCity';
-    icEverOk = true;
-  } else {
-    dot.className = icEverOk ? 'dot warn' : 'dot idle';
-    lbl.textContent = 'InterSCity';
+  dot.className = 'dot ' + (ok ? 'ok' : (icEverOk ? 'warn' : 'idle'));
+  document.getElementById('lbl-ic').textContent = ok ? 'InterSCity conectado' : 'InterSCity off';
+  if (ok) icEverOk = true;
+}
+
+async function checkInterSCityStatus({ log = false } = {}) {
+  try {
+    const res = await fetch('/api/ic/catalog/capabilities', {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok && res.status !== 304) throw new Error(`HTTP ${res.status}`);
+    if (res.status !== 304) await res.json();
+    const changed = !lastIcOk;
+    setICStatus(true);
+    if (log || changed) addLog('ic', 'InterSCity conectado');
+  } catch (e) {
+    const changed = lastIcOk;
+    setICStatus(false);
+    if (log || changed) addLog('warn', `InterSCity indisponivel: ${e.message}`);
   }
 }
 
-// ── InterSCity fetch (proxy Nginx /api/ic/) ───────────────────────────────────
-function fetchIC(roomId) {
-  const uuid = ROOM_UUIDS[roomId];
-  if (!uuid) return;
-  clearTimeout(icTimers[roomId]);
-  icTimers[roomId] = setTimeout(async () => {
-    try {
-      const res = await fetch(`/api/ic/collector/resources/${uuid}/data/last`, {
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const raw = await res.json();
-
-      // Debug: log raw response ao console para diagnóstico de formato
-      console.debug(`IC[${roomId}] raw:`, raw);
-
-      const d = normalizeIC(raw);
-      icData[roomId] = d;
-
-      if (d) {
-        setICStatus(true);
-        const t  = icGet(d, 'temperatura');
-        const u  = icGet(d, 'umidade');
-        const ts = icGetTs(d, 'temperatura');
-        addLog('ic',
-          `${roomId} · ${t  != null ? t.toFixed(1) + '°C' : '—'} · ` +
-          `${u  != null ? u.toFixed(0) + '%'   : '—'} · ` +
-          `${fmtIcTs(ts)}`
-        );
-      } else {
-        // Parsing falhou — mostra fragmento do raw para diagnóstico
-        setICStatus(false);
-        const preview = JSON.stringify(raw).slice(0, 120);
-        addLog('ic', `${roomId} · formato não reconhecido → ${preview}`);
-      }
-    } catch (e) {
-      icData[roomId] = null;
-      setICStatus(false);
-      if (!e.name?.includes('Abort')) addLog('warn', `IC erro [${roomId}]: ${e.message}`);
-    }
-    refreshCard(roomId);
-  }, 2000);
-}
-
-// ── MQTT ──────────────────────────────────────────────────────────────────────
 function connect() {
   clearTimeout(reconnectTimer);
-  const cid = 'dash_' + Math.random().toString(36).slice(2, 8);
-  client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, cid);
+  const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  const hosts = [MQTT_HOST];
+  const paths = [MQTT_PATH];
+  const candidates = hosts.flatMap(host => paths.map(path => `${proto}://${host}:${MQTT_PORT}${path}`));
+  let candidateIndex = 0;
 
-  client.onConnectionLost = ({ errorCode, errorMessage }) => {
-    setMQTT(false);
-    if (errorCode !== 0) {
-      addLog('warn', 'MQTT desconectado: ' + (errorMessage || 'erro'));
-      reconnectTimer = setTimeout(connect, 4000);
-    }
-  };
+  const tryCandidate = () => {
+    const url = candidates[candidateIndex % candidates.length];
+    candidateIndex++;
+    client = new MqttWsClient(url, 'ops_' + Math.random().toString(36).slice(2, 9));
 
-  client.onMessageArrived = ({ destinationName: topic, payloadString }) => {
-    try {
-      const data = JSON.parse(payloadString);
-      const sala = data.id_sala || topic.split('/')[1];
-      const isNew = !rooms[sala];
-      rooms[sala] = data;
-      upsertCard(sala, data);
-      if (isNew) {
-        updateCounter();
-        populateRoomSelects();
-        updatePanelState();
-      }
-      fetchIC(sala);
-
-      addLog('mqtt',
-        `${sala} · ${data.temperatura?.toFixed(1) ?? '—'}°C · ` +
-        `${data.umidade?.toFixed(0) ?? '—'}% · ` +
-        `${data.luminosidade ?? '—'} lx · ` +
-        `${data.presenca ? '● pres.' : '○ vazio'} · ` +
-        `AC ${data.status_ac === 'ligado' ? 'on' : 'off'} · ` +
-        `Luz ${data.status_luz === 'ligado' ? 'on' : 'off'}`
-      );
-    } catch (e) { console.warn('payload inválido', e); }
-  };
-
-  client.connect({
-    onSuccess: () => {
-      setMQTT(true);
-      client.subscribe(MQTT_TOPIC);
-      addLog('ok', `MQTT conectado · ${MQTT_HOST}:${MQTT_PORT}`);
-    },
-    onFailure: ({ errorMessage }) => {
+    client.onConnectionLost = ({ errorCode, errorMessage }) => {
       setMQTT(false);
-      addLog('warn', 'Falha MQTT: ' + (errorMessage || 'timeout'));
-      reconnectTimer = setTimeout(connect, 5000);
-    },
-    useSSL: false, keepAliveInterval: 30, cleanSession: true,
-  });
-}
+      if (errorCode !== 0) {
+        addLog('warn', `MQTT desconectado: ${errorMessage || 'erro'}`);
+        reconnectTimer = setTimeout(connect, 4000);
+      }
+    };
 
-// pub: publica no tópico de COMANDO (simulator processa)
-function pub(roomId, payload) {
-  if (!client?.isConnected()) { addLog('warn', 'MQTT não conectado'); return; }
-  const msg = new Paho.MQTT.Message(JSON.stringify(payload));
-  msg.destinationName = `ac-iot/${roomId}/comando`;
-  client.send(msg);
-}
+    client.onMessageArrived = ({ destinationName, payloadString }) => {
+      try {
+        const data = JSON.parse(payloadString);
+        const id = data.id_sala || destinationName.split('/')[1];
+        const previous = rooms[id];
+        rooms[id] = { ...previous, ...data, _seenAt: Date.now() };
+        selectedRoom = selectedRoom || id;
+        received++;
+        lastMqttAt = Date.now();
+        refreshMqttStatus();
 
-// pubSensor: publica no tópico de SENSORES (bridge → IC; usado no teste)
-function pubSensor(roomId, payload) {
-  if (!client?.isConnected()) { addLog('warn', 'MQTT não conectado'); return; }
-  const msg = new Paho.MQTT.Message(JSON.stringify(payload));
-  msg.destinationName = `ac-iot/${roomId}/sensores`;
-  client.send(msg);
-}
+        if (isCriticalTemp(rooms[id]) && !isCriticalTemp(previous)) {
+          addLog('warn', `${roomLabel(id)} temp. critica ${data.temperatura.toFixed(1)}C`);
+        } else if (received <= 8 || received % 250 === 0) {
+          addLog('mqtt', `${received} mensagens MQTT recebidas`);
+        }
+        scheduleRender();
+      } catch (e) {
+        addLog('warn', `payload invalido: ${e.message}`);
+      }
+    };
 
-// ── Helpers de seleção via <select> ──────────────────────────────────────────
-
-function populateRoomSelects() {
-  const known = Object.keys(rooms).sort();
-  const allOpt  = known.length > 1 ? `<option value="__all__">Todas as salas</option>` : '';
-  const roomOpts = known.map(id => {
-    const n = id.replace(/^sala(\d+)$/, (_, n) => `Sala ${+n}`);
-    return `<option value="${id}">${n}</option>`;
-  }).join('');
-
-  // Setpoints: default Todas
-  const selSp = document.getElementById('sp-room');
-  if (selSp) selSp.innerHTML = allOpt + roomOpts;
-
-  // Operador: lembra seleção anterior
-  const selOp = document.getElementById('op-room');
-  if (selOp) {
-    const prev = selOp.value;
-    selOp.innerHTML = `<option value="">Escolha a sala</option>` + allOpt + roomOpts;
-    if (prev && [...selOp.options].some(o => o.value === prev)) selOp.value = prev;
-  }
-}
-
-function getTargetRooms(elId) {
-  const val = document.getElementById(elId)?.value;
-  if (!val) { addLog('warn', 'Escolha onde aplicar'); return null; }
-  if (val === '__all__') return Object.keys(rooms);
-  return rooms[val] ? [val] : null;
-}
-
-function targetLabel(ids) {
-  const known = Object.keys(rooms);
-  return ids.length === known.length ? 'todas' : ids.sort().join(', ');
-}
-
-function updatePanelState() {
-  const ready = Object.keys(rooms).length > 0;
-  document.querySelectorAll('.op-panel .btn, .sp-panel .btn').forEach(b => {
-    b.disabled = !ready;
-    b.style.opacity = ready ? '1' : '0.4';
-  });
-}
-
-// ── Painel de Setpoints ───────────────────────────────────────────────────────
-
-window.spApply = () => {
-  const ids  = getTargetRooms('sp-room'); if (!ids) return;
-  const temp = parseFloat(document.getElementById('sp-temp')?.value);
-  const umid = parseFloat(document.getElementById('sp-umid')?.value);
-  const lux  = parseFloat(document.getElementById('sp-lux')?.value);
-
-  const payload = {};
-  if (!isNaN(temp)) payload.setpoint_ac      = temp;
-  if (!isNaN(umid)) payload.setpoint_umidade  = umid;
-  if (!isNaN(lux))  payload.setpoint_luz      = lux;
-
-  ids.forEach(id => pub(id, payload));
-  addLog('cmd', `Setpoints → ${targetLabel(ids)} · AC ${temp}°C · umid ${umid}% · lux ${lux}`);
-};
-
-// ── Painel do Operador ────────────────────────────────────────────────────────
-
-window.opApply = () => {
-  const ids  = getTargetRooms('op-room'); if (!ids) return;
-  const temp = parseFloat(document.getElementById('op-temp')?.value);
-  const lux  = parseFloat(document.getElementById('op-lux')?.value);
-  const umid = parseFloat(document.getElementById('op-umid')?.value);
-  const togOn = id => document.getElementById(id)?.classList.contains('tog-on') ?? false;
-  const auto  = togOn('op-auto');
-  const pres  = togOn('op-pres');
-  const ac    = togOn('op-ac');
-  const luz   = togOn('op-luz');
-
-  const payload = {
-    setpoint_ac:      isNaN(temp) ? undefined : temp,
-    setpoint_luz:     isNaN(lux)  ? undefined : lux,
-    setpoint_umidade: isNaN(umid) ? undefined : umid,
-    modo_ac:        auto ? 'ativo' : 'desativado',
-    presenca_auto:  pres,
-    comando:        ac  ? 'ligar' : 'desligar',
-    luz:            luz ? 'ligar' : 'desligar',
-  };
-  Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
-
-  ids.forEach(id => pub(id, payload));
-  addLog('cmd',
-    `Operador → ${targetLabel(ids)} · ` +
-    `${temp}°C · ${umid}% · ${lux}lx · ${auto ? 'auto' : 'manual'} · ` +
-    `presença:${pres ? 'on' : 'off'} · AC:${ac ? 'on' : 'off'} · Luz:${luz ? 'on' : 'off'}`
-  );
-};
-
-window.opSimular = () => {
-  const ids = getTargetRooms('op-room'); if (!ids) return;
-  ids.forEach(id => {
-    const rnd = n => Math.random() * n;
-    pubSensor(id, {
-      id_sala:          id,
-      temperatura:      +(20 + rnd(12)).toFixed(1),
-      umidade:          +(40 + rnd(40)).toFixed(1),
-      luminosidade:     Math.round(50 + rnd(800)),
-      presenca:         Math.random() > 0.4,
-      status_ac:        Math.random() > 0.5 ? 'ligado' : 'desligado',
-      status_luz:       Math.random() > 0.5 ? 'ligado' : 'desligado',
-      setpoint_ac:      +(20 + rnd(6)).toFixed(1),
-      setpoint_umidade: 55,
-      setpoint_luz:     300,
-      modo_ac:          Math.random() > 0.3 ? 'ativo' : 'desativado',
-      timestamp:        Math.floor(Date.now() / 1000),
+    client.connect({
+      onSuccess: () => {
+        setMQTT(true);
+        client.subscribe(MQTT_TOPIC);
+        addLog('ok', `MQTT conectado em ${url}`);
+      },
+      onFailure: ({ errorMessage }) => {
+        setMQTT(false);
+        addLog('warn', `falha MQTT em ${url}: ${errorMessage || 'timeout'}`);
+        if (candidateIndex < candidates.length) setTimeout(tryCandidate, 600);
+        else reconnectTimer = setTimeout(connect, 5000);
+      },
     });
+  };
+
+  tryCandidate();
+}
+
+function scheduleRender() {
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(renderAll, 250);
+}
+
+function aggregate() {
+  const ids = sortedRoomIds();
+  const zones = {};
+  const totals = {
+    total: ids.length,
+    offline: 0,
+    presence: 0,
+    ac: 0,
+    light: 0,
+    hot: 0,
+    tempSum: 0,
+    tempCount: 0,
+    hotTempSum: 0,
+    hotTempCount: 0,
+    humiditySum: 0,
+    humidityCount: 0,
+  };
+
+  ids.forEach(id => {
+    const room = rooms[id];
+    const zone = zoneOf(id);
+    if (!zones[zone]) {
+      zones[zone] = {
+        id: zone,
+        total: 0,
+        offline: 0,
+        presence: 0,
+        ac: 0,
+        light: 0,
+        hot: 0,
+        tempSum: 0,
+        tempCount: 0,
+        humiditySum: 0,
+        humidityCount: 0,
+      };
+    }
+    const z = zones[zone];
+    z.total++;
+    if (isOffline(room)) { totals.offline++; z.offline++; }
+    if (room.presenca) { totals.presence++; z.presence++; }
+    if (room.status_ac === 'ligado') { totals.ac++; z.ac++; }
+    if (room.status_luz === 'ligado') { totals.light++; z.light++; }
+    if (isCriticalTemp(room)) {
+      totals.hot++;
+      totals.hotTempSum += room.temperatura;
+      totals.hotTempCount++;
+      z.hot++;
+    }
+    if (typeof room.temperatura === 'number') {
+      totals.tempSum += room.temperatura; totals.tempCount++;
+      z.tempSum += room.temperatura; z.tempCount++;
+    }
+    if (typeof room.umidade === 'number') {
+      totals.humiditySum += room.umidade; totals.humidityCount++;
+      z.humiditySum += room.umidade; z.humidityCount++;
+    }
   });
-  addLog('cmd', `Simulação → ${targetLabel(ids)} · temp, umid, lux, presença, AC, luz, modo`);
+
+  return { ids, zones: Object.values(zones).sort((a, b) => a.id.localeCompare(b.id)), totals };
+}
+
+function renderAll() {
+  const data = aggregate();
+  renderKpis(data.totals);
+  renderZones(data.zones);
+  renderTable(filteredRoomIds());
+  renderSelected();
+  syncScopeLabel();
+}
+
+function renderKpis(t) {
+  document.getElementById('kpi-total').textContent = t.total;
+  document.getElementById('kpi-offline').textContent = t.offline;
+  document.getElementById('kpi-presence').textContent = t.presence;
+  document.getElementById('kpi-ac').textContent = t.ac;
+  document.getElementById('kpi-light').textContent = t.light;
+  document.getElementById('kpi-humidity').textContent = t.humidityCount ? `${(t.humiditySum / t.humidityCount).toFixed(0)}%` : '--';
+  document.getElementById('kpi-temp').textContent = t.tempCount ? `${(t.tempSum / t.tempCount).toFixed(1)}C` : '--';
+  document.getElementById('kpi-hot').textContent = t.hot;
+  document.getElementById('kpi-hot-avg').textContent = t.hotTempCount ? `${(t.hotTempSum / t.hotTempCount).toFixed(1)}C` : '--';
+}
+
+function renderZones(zones) {
+  const criticalMode = statusFilter === 'critical-temp';
+  const criticalIds = criticalMode ? criticalRoomIds() : [];
+  const visibleZones = criticalMode ? zones.filter(z => z.hot > 0) : zones;
+  document.getElementById('zone-caption').textContent = criticalMode
+    ? `${criticalIds.length} salas criticas · ${visibleZones.length} blocos afetados`
+    : `${zones.length} blocos · ${zoneSize} salas por bloco`;
+  const board = document.getElementById('zone-board');
+  if (!visibleZones.length) {
+    board.innerHTML = '<div class="empty-detail">Nenhuma sala com temperatura critica agora.</div>';
+    return;
+  }
+  board.innerHTML = visibleZones.map(z => {
+    const avg = z.tempCount ? z.tempSum / z.tempCount : null;
+    const humidity = z.humidityCount ? z.humiditySum / z.humidityCount : null;
+    const level = z.offline || z.hot ? 'bad' : (z.presence || z.ac ? 'busy' : 'ok');
+    const active = selectedZone === z.id ? 'active' : '';
+    return `<button class="zone-tile ${level} ${active}" onclick="selectZone('${z.id}')">
+      <span class="zone-id">${z.id}</span>
+      <span class="zone-temp">${avg ? avg.toFixed(1) + 'C' : '--'}</span>
+      <span class="zone-line">${z.total} salas · ${z.presence} pres.</span>
+      <span class="zone-line">${z.ac} ar · ${z.light} luz · ${humidity ? humidity.toFixed(0) + '% umid' : '--'}</span>
+      <span class="zone-line">${z.hot} crit · ${z.offline} off</span>
+    </button>`;
+  }).join('');
+}
+
+function renderTable(ids) {
+  const tbody = document.getElementById('room-tbody');
+  document.getElementById('table-caption').textContent = `${ids.length} salas filtradas`;
+  tbody.innerHTML = ids.map(id => {
+    const r = rooms[id];
+    const cls = isAlert(r) ? 'row-alert' : '';
+    const selected = selectedRoom === id ? 'selected' : '';
+    return `<tr class="${cls} ${selected}" onclick="selectRoom('${id}')">
+      <td><strong>${roomLabel(id)}</strong><small>${id}</small></td>
+      <td>${zoneOf(id)}</td>
+      <td>${fmtNum(r.temperatura, 1, 'C')}</td>
+      <td>${fmtNum(r.umidade, 0, '%')}</td>
+      <td>${fmtNum(r.luminosidade, 0, ' lx')}</td>
+      <td>${r.presenca ? 'sim' : 'nao'}</td>
+      <td>${r.status_ac || '--'}</td>
+      <td>${r.modo_ac || '--'}</td>
+      <td>${isOffline(r) ? '<b>offline</b>' : fmtHeartbeat(r)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderSelected() {
+  const body = document.getElementById('selected-body');
+  const title = document.getElementById('selected-title');
+  if (!selectedRoom || !rooms[selectedRoom]) {
+    title.textContent = 'nenhuma sala';
+    body.innerHTML = '<div class="empty-detail">Selecione uma sala na tabela para consultar o InterSCity.</div>';
+    return;
+  }
+  const r = rooms[selectedRoom];
+  const ic = icData[selectedRoom];
+  title.textContent = `${roomLabel(selectedRoom)} · ${zoneOf(selectedRoom)}`;
+  body.innerHTML = `
+    <div class="detail-grid">
+      <div><span>Temperatura</span><strong>${fmtNum(r.temperatura, 1, 'C')}</strong></div>
+      <div><span>Umidade</span><strong>${fmtNum(r.umidade, 0, '%')}</strong></div>
+      <div><span>Luminosidade</span><strong>${fmtNum(r.luminosidade, 0, ' lx')}</strong></div>
+      <div><span>Presenca</span><strong>${r.presenca ? 'sim' : 'nao'}</strong></div>
+      <div><span>AC</span><strong>${r.status_ac || '--'}</strong></div>
+      <div><span>Luz</span><strong>${r.status_luz || '--'}</strong></div>
+      <div><span>Modo</span><strong>${r.modo_ac || '--'}</strong></div>
+      <div><span>Heartbeat</span><strong>${fmtHeartbeat(r)}</strong></div>
+    </div>
+    <div class="ic-detail">
+      <strong>InterSCity</strong>
+      <div class="ic-state" id="ic-query-state">${ic ? 'Ultima consulta carregada.' : 'Clique em Consultar IC para buscar a leitura registrada.'}</div>
+      ${ic ? icSummary(ic) : '<div class="empty-detail">Sem consulta carregada para esta sala.</div>'}
+    </div>
+  `;
+}
+
+function publish(roomId, payload) {
+  if (!client?.isConnected()) {
+    addLog('warn', 'MQTT nao conectado');
+    return;
+  }
+  client.sendMessage(`ac-iot/${roomId}/comando`, JSON.stringify(payload));
+}
+
+function targetRooms() {
+  const scope = document.getElementById('cmd-scope').value;
+  if (scope === 'selected') return selectedRoom ? [selectedRoom] : [];
+  if (scope === 'zone') return selectedZone ? sortedRoomIds().filter(id => zoneOf(id) === selectedZone) : [];
+  if (scope === 'filtered') return filteredRoomIds();
+  if (scope === 'critical-temp') return criticalRoomIds();
+  return sortedRoomIds();
+}
+
+window.applyCommand = () => {
+  const ids = targetRooms();
+  if (!ids.length) {
+    addLog('warn', 'nenhuma sala no escopo do comando');
+    return;
+  }
+  const payload = {
+    setpoint_ac: parseFloat(document.getElementById('cmd-temp').value),
+    setpoint_umidade: parseFloat(document.getElementById('cmd-umid').value),
+    setpoint_luz: parseInt(document.getElementById('cmd-lux').value, 10),
+    modo_ac: document.getElementById('cmd-auto').classList.contains('active') ? 'ativo' : 'desativado',
+    comando: document.getElementById('cmd-ac').classList.contains('active') ? 'ligar' : 'desligar',
+    luz: document.getElementById('cmd-light').classList.contains('active') ? 'ligar' : 'desligar',
+  };
+  ids.forEach(id => publish(id, payload));
+  addLog('cmd', `comando aplicado em ${ids.length} salas`);
 };
 
-// ── UI helpers ────────────────────────────────────────────────────────────────
-function setMQTT(ok) {
-  const dot = document.getElementById('dot-mqtt');
-  const lbl = document.getElementById('lbl-mqtt');
-  if (!dot) return;
-  dot.className = 'dot ' + (ok ? 'ok' : 'err');
-  lbl.textContent = ok ? 'MQTT' : 'MQTT off';
-}
+window.syncCommandRanges = () => {
+  const temp = document.getElementById('cmd-temp').value;
+  const umid = document.getElementById('cmd-umid').value;
+  const lux = document.getElementById('cmd-lux').value;
+  document.getElementById('cmd-temp-value').textContent = `${Number(temp).toFixed(Number(temp) % 1 ? 1 : 0)}C`;
+  document.getElementById('cmd-umid-value').textContent = `${umid}%`;
+  document.getElementById('cmd-lux-value').textContent = `${lux} lx`;
+};
 
-function updateCounter() {
-  document.getElementById('stat-rooms').textContent = Object.keys(rooms).length;
-}
-
-function tempClass(t) {
-  if (t == null) return '';
-  if (t < 20)  return 'cold';
-  if (t < 24)  return 'cok';
-  if (t < 28)  return 'warm';
-  return 'hot';
-}
-
-function fmtTs(ts) {
-  return ts ? new Date(ts * 1000).toLocaleTimeString('pt-BR') : '—';
-}
-
-// ── Card (apenas monitoramento) ───────────────────────────────────────────────
-function cardHTML(id, d) {
-  const acOn  = d.status_ac  === 'ligado';
-  const luzOn = d.status_luz === 'ligado';
-  const auto  = d.modo_ac    === 'ativo';
-  const ic    = icData[id];
-
-  const icT   = ic ? icGet(ic, 'temperatura') : null;
-  const icU   = ic ? icGet(ic, 'umidade')     : null;
-  const icTsv = ic ? icGetTs(ic, 'temperatura') : null;
-
-  const title = id.replace(/^sala(\d+)$/, (_, n) => `Sala ${n.padStart(2, '0')}`);
-
-  let icContent;
-  if (ic === undefined) {
-    icContent = `<span class="ic-nd">aguardando…</span>`;
-  } else if (ic === null) {
-    icContent = `<span class="ic-nd">sem resposta</span>`;
-  } else if (icT != null) {
-    icContent = `<span class="ic-val">${icT.toFixed(1)}°C · ${icU != null ? icU.toFixed(0) + '%' : '—'}</span>
-                 <span class="ic-ts">${fmtIcTs(icTsv)}</span>`;
-  } else {
-    icContent = `<span class="ic-nd">recebido · sem valores</span>`;
+window.requestSelectedIC = async () => {
+  const roomId = selectedRoom;
+  const state = document.getElementById('ic-query-state');
+  const button = document.getElementById('btn-ic-query');
+  if (!roomId) {
+    if (state) state.textContent = 'Selecione uma sala antes de consultar.';
+    addLog('warn', 'selecione uma sala para consultar o InterSCity');
+    return;
   }
-
-  const nd = (v, dec, u) => v != null ? `${typeof dec === 'number' ? v.toFixed(dec) : v}<small>${u}</small>` : `—`;
-
-  return `
-  <div class="card-head">
-    <span class="card-title">${title}</span>
-    <div class="card-tags">
-      <span class="badge ${d.presenca ? 'b-pres' : 'b-off'}">${d.presenca ? '● Presente' : '○ Vazio'}</span>
-      <span class="badge ${auto ? 'b-auto' : 'b-manual'}">${auto ? 'Auto' : 'Manual'}</span>
-    </div>
-  </div>
-
-  <!-- Medidas atuais -->
-  <div class="metrics">
-    <div class="metric">
-      <span class="mlbl">Temperatura</span>
-      <span class="mval ${tempClass(d.temperatura)}">${nd(d.temperatura, 1, '°C')}</span>
-    </div>
-    <div class="metric">
-      <span class="mlbl">Umidade</span>
-      <span class="mval">${nd(d.umidade, 0, '%')}</span>
-    </div>
-    <div class="metric">
-      <span class="mlbl">Luminosidade</span>
-      <span class="mval">${nd(d.luminosidade, null, ' lx')}</span>
-    </div>
-  </div>
-
-  <!-- Setpoints definidos -->
-  <div class="sp-metrics">
-    <div class="sp-metric">
-      <span class="sp-mlbl">SP Temperatura</span>
-      <span class="sp-mval">${d.setpoint_ac != null ? d.setpoint_ac + '<small>°C</small>' : '—'}</span>
-    </div>
-    <div class="sp-metric">
-      <span class="sp-mlbl">SP Umidade</span>
-      <span class="sp-mval">${d.setpoint_umidade != null ? d.setpoint_umidade + '<small>%</small>' : '—'}</span>
-    </div>
-    <div class="sp-metric">
-      <span class="sp-mlbl">SP Luminosidade</span>
-      <span class="sp-mval">${d.setpoint_luz != null ? d.setpoint_luz + '<small> lx</small>' : '—'}</span>
-    </div>
-  </div>
-
-  <!-- Status operacional -->
-  <div class="status-row">
-    <span class="stag ${acOn  ? 'st-on' : 'st-off'}">AC ${acOn  ? 'Ligado' : 'Desligado'}</span>
-    <span class="stag ${luzOn ? 'st-on' : 'st-off'}">Luz ${luzOn ? 'Ligada' : 'Desligada'}</span>
-  </div>
-
-  <div class="ic-row">
-    <span class="ic-lbl">IC</span>
-    ${icContent}
-  </div>
-
-  <div class="card-foot">
-    <span>${id}</span>
-    <span>↻ ${fmtTs(d.timestamp)}</span>
-  </div>`;
-}
-
-function upsertCard(id, data) {
-  document.getElementById('empty-state')?.remove();
-  let card = document.getElementById(`card-${id}`);
-  if (!card) {
-    card = document.createElement('div');
-    card.className = 'room-card';
-    card.id = `card-${id}`;
-    const grid  = document.getElementById('room-grid');
-    const cards = [...grid.querySelectorAll('.room-card')];
-    const next  = cards.find(c => c.id > `card-${id}`);
-    grid.insertBefore(card, next || null);
+  const uuid = roomUuid(roomId);
+  if (!uuid) return addLog('warn', `UUID invalido para ${roomId}`);
+  if (state) state.textContent = `Consultando ${roomLabel(roomId)}...`;
+  if (button) button.disabled = true;
+  try {
+    const res = await fetch(`/api/ic/collector/resources/${uuid}/data/last`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    icData[roomId] = await res.json();
+    setICStatus(true);
+    if (state) state.textContent = `${roomLabel(roomId)} atualizada via InterSCity.`;
+    addLog('ic', `${roomLabel(roomId)} atualizado via InterSCity`);
+  } catch (e) {
+    setICStatus(false);
+    if (state) state.textContent = `Falha na consulta: ${e.message}`;
+    addLog('warn', `InterSCity falhou para ${roomLabel(roomId)}: ${e.message}`);
+  } finally {
+    if (button) button.disabled = false;
   }
-  card.innerHTML = cardHTML(id, data);
-  card.classList.remove('flash');
-  void card.offsetWidth;
-  card.classList.add('flash');
-}
+  renderAll();
+};
 
-function refreshCard(id) {
-  if (rooms[id]) upsertCard(id, rooms[id]);
-}
+window.selectZone = (zone) => {
+  selectedZone = selectedZone === zone ? null : zone;
+  document.getElementById('cmd-scope').value = selectedZone ? 'zone' : 'all';
+  if (selectedZone) roomFilter = selectedZone.toLowerCase();
+  document.getElementById('room-filter').value = selectedZone || '';
+  renderAll();
+};
 
-// ── Relógio ───────────────────────────────────────────────────────────────────
+window.selectRoom = (id) => {
+  selectedRoom = id;
+  renderAll();
+};
+
+window.setRoomFilter = (value) => {
+  roomFilter = value || '';
+  selectedZone = null;
+  renderAll();
+};
+
+window.setStatusFilter = (value) => {
+  statusFilter = value;
+  if (value === 'critical-temp') document.getElementById('cmd-scope').value = 'critical-temp';
+  renderAll();
+};
+
+window.setZoneSize = (value) => {
+  if (value === 'critical-temp') {
+    statusFilter = 'critical-temp';
+    selectedZone = null;
+    roomFilter = '';
+    document.getElementById('status-filter').value = 'critical-temp';
+    document.getElementById('cmd-scope').value = 'critical-temp';
+    document.getElementById('room-filter').value = '';
+    renderAll();
+    return;
+  }
+  statusFilter = 'all';
+  document.getElementById('status-filter').value = 'all';
+  zoneSize = parseInt(value, 10) || DEFAULT_ZONE_SIZE;
+  selectedZone = null;
+  renderAll();
+};
+
+window.toggleButton = (button) => {
+  button.classList.toggle('active');
+};
+
+window.syncScopeLabel = () => {
+  const ids = targetRooms();
+  document.getElementById('command-scope-label').textContent = `escopo: ${ids.length} salas`;
+};
+
 setInterval(() => {
   document.getElementById('footer-time').textContent = new Date().toLocaleTimeString('pt-BR');
-}, 1000);
+  refreshMqttStatus();
+  renderAll();
+}, 5000);
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+setInterval(() => checkInterSCityStatus(), 30000);
+
+seedInventory(1000);
+syncCommandRanges();
 setICStatus(false);
-updatePanelState();
+setMQTT(false);
+renderAll();
 connect();
+checkInterSCityStatus({ log: true });

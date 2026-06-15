@@ -9,10 +9,10 @@ cd /Users/mangueira/mangueira-dev/ac-iot-sd-ufma
 ## Iniciar / Parar
 
 ```bash
-docker compose up -d --build          # subir (com rebuild)
-docker compose up -d                  # subir (sem rebuild)
-docker compose down                   # parar
-docker compose ps -a                  # checar status
+docker compose -f docker-compose.local.yml up -d --build          # subir (com rebuild)
+docker compose -f docker-compose.local.yml up -d                  # subir (sem rebuild)
+docker compose -f docker-compose.local.yml down                   # parar
+docker compose -f docker-compose.local.yml ps -a                  # checar status
 ```
 
 ---
@@ -20,8 +20,8 @@ docker compose ps -a                  # checar status
 ## Reiniciar serviços
 
 ```bash
-docker compose restart                # reinicia tudo
-docker compose restart simulator bridge  # reinicia só os serviços C++
+docker compose -f docker-compose.local.yml restart                # reinicia tudo
+docker compose -f docker-compose.local.yml restart simulator bridge  # reinicia só os serviços C++
 ```
 
 ---
@@ -31,11 +31,11 @@ docker compose restart simulator bridge  # reinicia só os serviços C++
 Quando build quebrado, volumes antigos ou comportamento inesperado:
 
 ```bash
-docker compose down -v --remove-orphans && \
+docker compose -f docker-compose.local.yml down -v --remove-orphans && \
 docker builder prune -af && \
 docker image prune -af && \
-docker compose up -d --build && \
-docker compose ps -a
+docker compose -f docker-compose.local.yml up -d --build && \
+docker compose -f docker-compose.local.yml ps -a
 ```
 
 ---
@@ -43,9 +43,9 @@ docker compose ps -a
 ## Logs ao vivo
 
 ```bash
-docker compose logs -f bridge         # telemetria → InterSCity
-docker compose logs -f simulator      # publicações das salas
-docker compose logs -f                # tudo junto
+docker compose -f docker-compose.local.yml logs -f bridge         # telemetria → InterSCity
+docker compose -f docker-compose.local.yml logs -f simulator      # publicações das salas
+docker compose -f docker-compose.local.yml logs -f                # tudo junto
 ```
 
 Saída esperada no bridge:
@@ -82,10 +82,10 @@ open https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/catalog/resources
 
 ```bash
 # MQTT chegando?
-docker compose exec mosquitto mosquitto_sub -h localhost -t 'ac-iot/+/sensores' -C 3
+docker compose -f docker-compose.local.yml exec mosquitto mosquitto_sub -h localhost -t 'ac-iot/+/sensores' -C 3
 
 # Última leitura sala01 no InterSCity:
-curl -k -s https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/collector/resources/00000000-0000-4000-8000-000000000101/data/last | python3 -m json.tool
+curl -k -s https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/collector/resources/00000000-0000-4000-8000-000000000101/data/last | jq .
 
 # Web respondendo?
 curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:8080/
@@ -97,9 +97,9 @@ curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:8080/
 
 | Sintoma | Solução |
 |---|---|
-| Bridge não envia dados | `docker compose restart bridge` |
-| Build falhou | `docker compose build --no-cache simulator bridge` |
-| Dashboard sem dados | Verificar WebSocket 9001 — `docker compose restart mosquitto` |
+| Bridge não envia dados | `docker compose -f docker-compose.local.yml restart bridge` |
+| Build falhou | `docker compose -f docker-compose.local.yml build --no-cache simulator bridge` |
+| Dashboard sem dados | Verificar WebSocket 9001 — `docker compose -f docker-compose.local.yml restart mosquitto` |
 | InterSCity não responde | `curl -k -i --max-time 10 https://cidadesinteligentes.lsdi.ufma.br/interscity_lh/catalog/resources` |
 | Nada funciona | Reset completo (seção acima) |
 
@@ -118,5 +118,5 @@ sala04:
 ```
 
 ```bash
-docker compose restart simulator bridge
+docker compose -f docker-compose.local.yml restart simulator bridge
 ```
