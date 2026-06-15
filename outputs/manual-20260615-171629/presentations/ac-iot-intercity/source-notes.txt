@@ -1,0 +1,30 @@
+Sources used:
+- docs/apresentacao.md: existing system description, architecture, scale, endpoint list, prior evidence.
+- docs/acesso.md: access commands, metric field descriptions, InterSCity URLs.
+- docker compose -f docker-compose.local.yml ps: runtime containers up as of 2026-06-15.
+- mosquitto_sub ac-iot/system/bridge_metrics: current bridge metric sample.
+- docker-compose.local.yml, k8s/bridge.yaml, k8s/configmap.yaml, src/bridge/main.cpp, src/bridge/pipeline.hpp: distributed architecture and scaling parameters.
+
+Current metric sample used:
+{
+  "sent": 61330,
+  "failed": 2966,
+  "total_attempted": 64296,
+  "queue_size": 1000,
+  "queue_max": 20000,
+  "last_ok": false,
+  "last_status": 0,
+  "sent_per_sec": 0.0,
+  "bytes_per_sec": 0.0,
+  "request_bytes": 43484485,
+  "response_bytes": 467094,
+  "latency_ms_avg": 3154,
+  "workers": 8,
+  "max_rps": 20
+}
+
+Interpretation:
+- Local distributed runtime is active: simulator, mosquitto, bridge, web and Node-RED containers are up.
+- MQTT telemetry is live.
+- InterSCity bridge has historical successful submissions.
+- InterSCity remote API is currently unstable/unresponsive from this environment; the UI has been corrected to show "InterSCity instavel" rather than green success when last_ok=false.

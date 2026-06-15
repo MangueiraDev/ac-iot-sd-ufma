@@ -120,3 +120,48 @@ sala04:
 ```bash
 docker compose -f docker-compose.local.yml restart simulator bridge
 ```
+
+---
+
+## Atualizacao complementar — 15/06/2026
+
+### Novas paginas web
+
+```bash
+open http://localhost:8080              # painel operacional
+open http://localhost:8080/dashboard.html # dashboard de metricas
+```
+
+### Consultar metricas reais da bridge
+
+```bash
+docker compose -f docker-compose.local.yml exec mosquitto \
+  mosquitto_sub -h localhost -t 'ac-iot/system/bridge_metrics' -C 1 -W 3
+```
+
+Campos principais:
+
+- `sent`: envios realizados ao InterSCity.
+- `failed`: falhas de envio.
+- `sent_per_sec`: taxa recente de envio da bridge.
+- `request_bytes` e `response_bytes`: trafego real com InterSCity.
+- `queue_size`: fila atual da bridge.
+- `latency_ms_avg`: latencia media de envio.
+- `last_status`: ultimo status HTTP retornado pelo InterSCity.
+
+### Testar consulta InterSCity pela rota do web
+
+```bash
+docker compose -f docker-compose.local.yml exec web sh -c \
+  "wget -qO- -S http://127.0.0.1/api/ic/catalog/capabilities 2>&1 | head -12"
+
+docker compose -f docker-compose.local.yml exec web sh -c \
+  "wget -qO- -S http://127.0.0.1/api/ic/collector/resources/00000000-0000-4000-8000-000000000101/data/last 2>&1 | head -20"
+```
+
+### Fluxo correto da consulta IC na interface
+
+1. Abrir `http://localhost:8080`.
+2. Selecionar uma sala na tabela **Telemetria ao Vivo**.
+3. No painel **Sala Selecionada**, clicar em **Consultar IC**.
+4. Conferir os campos retornados do InterSCity no mesmo painel.

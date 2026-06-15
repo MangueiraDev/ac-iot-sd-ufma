@@ -177,9 +177,10 @@ function setMqttStatus(ok) {
   $('lbl-mqtt').textContent = ok ? 'MQTT ao vivo' : 'MQTT off';
 }
 
-function setIcStatus(ok) {
-  $('dot-ic').className = 'dot ' + (ok ? 'ok' : 'warn');
-  $('lbl-ic').textContent = ok ? 'InterSCity via bridge' : 'InterSCity sem metrica';
+function setIcStatus(state, label = '') {
+  const status = state === true ? 'ok' : (state === 'warn' ? 'warn' : 'idle');
+  $('dot-ic').className = `dot ${status}`;
+  $('lbl-ic').textContent = label || (state === true ? 'InterSCity via bridge' : 'InterSCity sem metrica');
 }
 
 function roomIndex(roomId) {
@@ -328,7 +329,13 @@ function handleBridgeMetrics(data, now) {
   metrics.icLastMs = Number(data.latency_ms_avg || 0);
   metrics.icLastStatus = data.last_ok ? `ok HTTP ${data.last_status || 0}` : `falha HTTP ${data.last_status || 0}`;
   if (data.last_ok) metrics.icLastOkAt = now;
-  setIcStatus(!!data.last_ok || metrics.icSuccess > 0);
+  if (data.last_ok) {
+    setIcStatus(true, 'InterSCity via bridge');
+  } else if (metrics.icSuccess > 0 || metrics.icRequests > 0) {
+    setIcStatus('warn', 'InterSCity instavel');
+  } else {
+    setIcStatus(false, 'InterSCity sem metrica');
+  }
 }
 
 function pushHistory(name, value) {

@@ -1,0 +1,1706 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/o25aof",
+    "id": "o25aof",
+    "slide": 9,
+    "layoutId": "13684b08-4248-46e8-91a2-13ffa31e0d05",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "5aac0268-fec9-46c2-8d2b-086b48cc479d",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Aptos",
+      "Aptos Display"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "13684b08-4248-46e8-91a2-13ffa31e0d05",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "5aac0268-fec9-46c2-8d2b-086b48cc479d",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "5aac0268-fec9-46c2-8d2b-086b48cc479d",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0nuxc3yl",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#F7FAFC",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/72x4nap4",
+      "id": "2",
+      "bbox": [
+        0,
+        0,
+        1280,
+        74
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#D6DEE8",
+      "lineWidth": 1
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ih4byhgn",
+      "id": "3",
+      "bbox": [
+        54,
+        20,
+        270,
+        22
+      ],
+      "geometry": "rect",
+      "text": "08 | Status e proximos passos",
+      "textPreview": "08 | Status e proximos passos",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "Aptos",
+        "color": "#2563EB",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "08 | Status e proximos passos"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "08 | Status e proximos passos",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "Aptos",
+            "color": "#2563EB",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "08 | Status e proximos passos",
+              "fontSize": 13,
+              "typeface": "Aptos",
+              "color": "#2563EB",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pkzupwb2",
+      "id": "4",
+      "bbox": [
+        54,
+        42,
+        760,
+        26
+      ],
+      "geometry": "rect",
+      "text": "O sistema local esta operacional; a disponibilidade remota do InterSCity deve ser monitorada",
+      "textPreview": "O sistema local esta operacional; a disponibilidade remota do InterSCity deve ser monitorada",
+      "resolvedFontSize": 23,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 23,
+        "typeface": "Aptos Display",
+        "color": "#132033",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "O sistema local esta operacional; a disponibilidade remota do"
+          },
+          {
+            "index": 2,
+            "text": "InterSCity deve ser monitorada"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "O sistema local esta operacional; a disponibilidade remota do InterSCity deve ser monitorada",
+          "resolvedTextStyle": {
+            "fontSize": 23,
+            "typeface": "Aptos Display",
+            "color": "#132033",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "O sistema local esta operacional; a disponibilidade remota do InterSCity deve ser monitorada",
+              "fontSize": 23,
+              "typeface": "Aptos Display",
+              "color": "#132033",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0z61032l",
+      "id": "5",
+      "bbox": [
+        820,
+        30,
+        400,
+        24
+      ],
+      "geometry": "rect",
+      "text": "fechamento",
+      "textPreview": "fechamento",
+      "resolvedFontSize": 12,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 12,
+        "typeface": "Aptos",
+        "color": "#5F7087",
+        "alignment": "right",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "fechamento"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "fechamento",
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "typeface": "Aptos",
+            "color": "#5F7087",
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "fechamento",
+              "fontSize": 12,
+              "typeface": "Aptos",
+              "color": "#5F7087"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7ed8bat4",
+      "id": "6",
+      "bbox": [
+        54,
+        682,
+        360,
+        18
+      ],
+      "geometry": "rect",
+      "text": "AC-IoT UFMA | Sistema distribuido IoT + InterSCity",
+      "textPreview": "AC-IoT UFMA | Sistema distribuido IoT + InterSCity",
+      "resolvedFontSize": 9,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 9,
+        "typeface": "Aptos",
+        "color": "#5F7087",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "AC-IoT UFMA | Sistema distribuido IoT + InterSCity"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "AC-IoT UFMA | Sistema distribuido IoT + InterSCity",
+          "resolvedTextStyle": {
+            "fontSize": 9,
+            "typeface": "Aptos",
+            "color": "#5F7087",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "AC-IoT UFMA | Sistema distribuido IoT + InterSCity",
+              "fontSize": 9,
+              "typeface": "Aptos",
+              "color": "#5F7087"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/itgfmlkj",
+      "id": "7",
+      "bbox": [
+        72,
+        130,
+        150,
+        30
+      ],
+      "geometry": "rect",
+      "fillColor": "#DCFCE7",
+      "lineColor": "#15803D",
+      "lineWidth": 1
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pwb2hwfy",
+      "id": "8",
+      "bbox": [
+        82,
+        137,
+        130,
+        16
+      ],
+      "geometry": "rect",
+      "text": "LOCAL OK",
+      "textPreview": "LOCAL OK",
+      "resolvedFontSize": 10.51,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 10.51,
+        "typeface": "Aptos",
+        "color": "#15803D",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "LOCAL OK"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "LOCAL OK",
+          "resolvedTextStyle": {
+            "fontSize": 10.51,
+            "typeface": "Aptos",
+            "color": "#15803D",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "LOCAL OK",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#15803D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0bi9s36h",
+      "id": "9",
+      "bbox": [
+        246,
+        130,
+        150,
+        30
+      ],
+      "geometry": "rect",
+      "fillColor": "#DCFCE7",
+      "lineColor": "#15803D",
+      "lineWidth": 1
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u18jqh0f",
+      "id": "10",
+      "bbox": [
+        256,
+        137,
+        130,
+        16
+      ],
+      "geometry": "rect",
+      "text": "MQTT AO VIVO",
+      "textPreview": "MQTT AO VIVO",
+      "resolvedFontSize": 10.51,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 10.51,
+        "typeface": "Aptos",
+        "color": "#15803D",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "MQTT AO VIVO"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "MQTT AO VIVO",
+          "resolvedTextStyle": {
+            "fontSize": 10.51,
+            "typeface": "Aptos",
+            "color": "#15803D",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "MQTT AO VIVO",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#15803D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/jm1cfa9w",
+      "id": "11",
+      "bbox": [
+        420,
+        130,
+        150,
+        30
+      ],
+      "geometry": "rect",
+      "fillColor": "#FEF3C7",
+      "lineColor": "#D97706",
+      "lineWidth": 1
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/c7u54zid",
+      "id": "12",
+      "bbox": [
+        430,
+        137,
+        130,
+        16
+      ],
+      "geometry": "rect",
+      "text": "IC INSTAVEL",
+      "textPreview": "IC INSTAVEL",
+      "resolvedFontSize": 10.51,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 10.51,
+        "typeface": "Aptos",
+        "color": "#D97706",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "IC INSTAVEL"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "IC INSTAVEL",
+          "resolvedTextStyle": {
+            "fontSize": 10.51,
+            "typeface": "Aptos",
+            "color": "#D97706",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "IC INSTAVEL",
+              "fontSize": 10.51,
+              "typeface": "Aptos",
+              "color": "#D97706",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1orytsvu",
+      "id": "13",
+      "bbox": [
+        72,
+        192,
+        330,
+        140
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#D6DEE8",
+      "lineWidth": 1
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u9knih4b",
+      "id": "14",
+      "bbox": [
+        72,
+        192,
+        7,
+        140
+      ],
+      "geometry": "rect",
+      "fillColor": "#15803D",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/judg7ads",
+      "id": "15",
+      "bbox": [
+        92,
+        210,
+        294,
+        28
+      ],
+      "geometry": "rect",
+      "text": "Concluido",
+      "textPreview": "Concluido",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "color": "#132033",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Concluido"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Concluido",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Aptos",
+            "color": "#132033",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Concluido",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#132033",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cfa9w3m9",
+      "id": "16",
+      "bbox": [
+        92,
+        244,
+        294,
+        78
+      ],
+      "geometry": "rect",
+      "text": "Painel para 1.000 salas, filtros, blocos, temperatura critica, dashboard de metricas e link externo para o InterSCity.",
+      "textPreview": "Painel para 1.000 salas, filtros, blocos, temperatura critica, dashboard de metricas e link externo para o InterSCity.",
+      "resolvedFontSize": 13.51,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13.51,
+        "typeface": "Aptos",
+        "color": "#5F7087",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Painel para 1.000 salas, filtros, blocos,"
+          },
+          {
+            "index": 2,
+            "text": "temperatura critica, dashboard de metricas e"
+          },
+          {
+            "index": 3,
+            "text": "link externo para o InterSCity."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Painel para 1.000 salas, filtros, blocos, temperatura critica, dashboard de metricas e link externo para o InterSCity.",
+          "resolvedTextStyle": {
+            "fontSize": 13.51,
+            "typeface": "Aptos",
+            "color": "#5F7087",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Painel para 1.000 salas, filtros, blocos, temperatura critica, dashboard de metricas e link externo para o InterSCity.",
+              "fontSize": 13.51,
+              "typeface": "Aptos",
+              "color": "#5F7087"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1032lszq",
+      "id": "17",
+      "bbox": [
+        474,
+        192,
+        330,
+        140
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#D6DEE8",
+      "lineWidth": 1
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/udg7adsj",
+      "id": "18",
+      "bbox": [
+        474,
+        192,
+        7,
+        140
+      ],
+      "geometry": "rect",
+      "fillColor": "#2563EB",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nyd0z610",
+      "id": "19",
+      "bbox": [
+        494,
+        210,
+        294,
+        28
+      ],
+      "geometry": "rect",
+      "text": "Evidencia atual",
+      "textPreview": "Evidencia atual",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "color": "#132033",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Evidencia atual"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Evidencia atual",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Aptos",
+            "color": "#132033",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Evidencia atual",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#132033",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fu18jqh0",
+      "id": "20",
+      "bbox": [
+        494,
+        244,
+        294,
+        78
+      ],
+      "geometry": "rect",
+      "text": "Containers ativos, sensores MQTT chegando, bridge publicando metricas e historico de 61.330 envios ao InterSCity.",
+      "textPreview": "Containers ativos, sensores MQTT chegando, bridge publicando metricas e historico de 61.330 envios ao InterSCity.",
+      "resolvedFontSize": 13.51,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13.51,
+        "typeface": "Aptos",
+        "color": "#5F7087",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Containers ativos, sensores MQTT chegando,"
+          },
+          {
+            "index": 2,
+            "text": "bridge publicando metricas e historico de"
+          },
+          {
+            "index": 3,
+            "text": "61.330 envios ao InterSCity."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Containers ativos, sensores MQTT chegando, bridge publicando metricas e historico de 61.330 envios ao InterSCity.",
+          "resolvedTextStyle": {
+            "fontSize": 13.51,
+            "typeface": "Aptos",
+            "color": "#5F7087",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Containers ativos, sensores MQTT chegando, bridge publicando metricas e historico de 61.330 envios ao InterSCity.",
+              "fontSize": 13.51,
+              "typeface": "Aptos",
+              "color": "#5F7087"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m94fu18j",
+      "id": "21",
+      "bbox": [
+        876,
+        192,
+        330,
+        140
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#D6DEE8",
+      "lineWidth": 1
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/x0nuxc3y",
+      "id": "22",
+      "bbox": [
+        876,
+        192,
+        7,
+        140
+      ],
+      "geometry": "rect",
+      "fillColor": "#D97706",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4fu18jqh",
+      "id": "23",
+      "bbox": [
+        896,
+        210,
+        294,
+        28
+      ],
+      "geometry": "rect",
+      "text": "Risco operacional",
+      "textPreview": "Risco operacional",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "Aptos",
+        "color": "#132033",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Risco operacional"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Risco operacional",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "typeface": "Aptos",
+            "color": "#132033",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Risco operacional",
+              "fontSize": 17,
+              "typeface": "Aptos",
+              "color": "#132033",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 24,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fil0rqd4",
+      "id": "24",
+      "bbox": [
+        896,
+        244,
+        294,
+        78
+      ],
+      "geometry": "rect",
+      "text": "No momento da verificacao, a API remota InterSCity retornou timeout/last_ok=false. O sistema local segue operando.",
+      "textPreview": "No momento da verificacao, a API remota InterSCity retornou timeout/last_ok=false. O sistema local segue operando.",
+      "resolvedFontSize": 13.51,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13.51,
+        "typeface": "Aptos",
+        "color": "#5F7087",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "No momento da verificacao, a API remota"
+          },
+          {
+            "index": 2,
+            "text": "InterSCity retornou timeout/last_ok=false. O"
+          },
+          {
+            "index": 3,
+            "text": "sistema local segue operando."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "No momento da verificacao, a API remota InterSCity retornou timeout/last_ok=false. O sistema local segue operando.",
+          "resolvedTextStyle": {
+            "fontSize": 13.51,
+            "typeface": "Aptos",
+            "color": "#5F7087",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "No momento da verificacao, a API remota InterSCity retornou timeout/last_ok=false. O sistema local segue operando.",
+              "fontSize": 13.51,
+              "typeface": "Aptos",
+              "color": "#5F7087"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 25,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qxs72x4n",
+      "id": "25",
+      "bbox": [
+        86,
+        404,
+        420,
+        30
+      ],
+      "geometry": "rect",
+      "text": "Proximos passos sugeridos",
+      "textPreview": "Proximos passos sugeridos",
+      "resolvedFontSize": 22,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 22,
+        "typeface": "Aptos",
+        "color": "#132033",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Proximos passos sugeridos"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Proximos passos sugeridos",
+          "resolvedTextStyle": {
+            "fontSize": 22,
+            "typeface": "Aptos",
+            "color": "#132033",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Proximos passos sugeridos",
+              "fontSize": 22,
+              "typeface": "Aptos",
+              "color": "#132033",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 26,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xobm58z2",
+      "id": "26",
+      "bbox": [
+        92,
+        460,
+        13,
+        13
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#2563EB",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 27,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/83itgfml",
+      "id": "27",
+      "bbox": [
+        116,
+        456,
+        736,
+        36
+      ],
+      "geometry": "rect",
+      "text": "Registrar janela de evidencias quando o InterSCity remoto voltar a responder.",
+      "textPreview": "Registrar janela de evidencias quando o InterSCity remoto voltar a responder.",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "color": "#334155",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Registrar janela de evidencias quando o InterSCity remoto voltar a responder."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Registrar janela de evidencias quando o InterSCity remoto voltar a responder.",
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "typeface": "Aptos",
+            "color": "#334155",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Registrar janela de evidencias quando o InterSCity remoto voltar a responder.",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#334155"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 28,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fepkzupw",
+      "id": "28",
+      "bbox": [
+        92,
+        502,
+        13,
+        13
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#2563EB",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 29,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mtwra5gb",
+      "id": "29",
+      "bbox": [
+        116,
+        498,
+        736,
+        36
+      ],
+      "geometry": "rect",
+      "text": "Adicionar alarme visual para fila alta ou sent_per_sec zerado por periodo prolongado.",
+      "textPreview": "Adicionar alarme visual para fila alta ou sent_per_sec zerado por periodo prolongado.",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "color": "#334155",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Adicionar alarme visual para fila alta ou sent_per_sec zerado por periodo prolongado."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Adicionar alarme visual para fila alta ou sent_per_sec zerado por periodo prolongado.",
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "typeface": "Aptos",
+            "color": "#334155",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Adicionar alarme visual para fila alta ou sent_per_sec zerado por periodo prolongado.",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#334155"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 30,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0nuxc3yl",
+      "id": "30",
+      "bbox": [
+        92,
+        544,
+        13,
+        13
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#2563EB",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 31,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/p8nqxs72",
+      "id": "31",
+      "bbox": [
+        116,
+        540,
+        736,
+        36
+      ],
+      "geometry": "rect",
+      "text": "Executar teste de carga com multiplas replicas do simulador e bridge.",
+      "textPreview": "Executar teste de carga com multiplas replicas do simulador e bridge.",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "color": "#334155",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Executar teste de carga com multiplas replicas do simulador e bridge."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Executar teste de carga com multiplas replicas do simulador e bridge.",
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "typeface": "Aptos",
+            "color": "#334155",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Executar teste de carga com multiplas replicas do simulador e bridge.",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#334155"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 32,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ih4byhgn",
+      "id": "32",
+      "bbox": [
+        92,
+        586,
+        13,
+        13
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#2563EB",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 33,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/72x4nap4",
+      "id": "33",
+      "bbox": [
+        116,
+        582,
+        736,
+        36
+      ],
+      "geometry": "rect",
+      "text": "Anexar prints do dashboard e logs ao relatorio final.",
+      "textPreview": "Anexar prints do dashboard e logs ao relatorio final.",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "color": "#334155",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Anexar prints do dashboard e logs ao relatorio final."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Anexar prints do dashboard e logs ao relatorio final.",
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "typeface": "Aptos",
+            "color": "#334155",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Anexar prints do dashboard e logs ao relatorio final.",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#334155"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 34,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0z61032l",
+      "id": "34",
+      "bbox": [
+        896,
+        420,
+        260,
+        116
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#D6DEE8",
+      "lineWidth": 1
+    },
+    {
+      "order": 35,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pkzupwb2",
+      "id": "35",
+      "bbox": [
+        922,
+        446,
+        210,
+        30
+      ],
+      "geometry": "rect",
+      "text": "Mensagem-chave",
+      "textPreview": "Mensagem-chave",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 18,
+        "typeface": "Aptos",
+        "color": "#132033",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Mensagem-chave"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Mensagem-chave",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Aptos",
+            "color": "#132033",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Mensagem-chave",
+              "fontSize": 18,
+              "typeface": "Aptos",
+              "color": "#132033",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 36,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/itgfmlkj",
+      "id": "36",
+      "bbox": [
+        922,
+        488,
+        210,
+        34
+      ],
+      "geometry": "rect",
+      "text": "Sistema distribuido local pronto; integracao externa observavel e resiliente.",
+      "textPreview": "Sistema distribuido local pronto; integracao externa observavel e resiliente.",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "color": "#2563EB",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Sistema distribuido local"
+          },
+          {
+            "index": 2,
+            "text": "pronto; integracao externa"
+          },
+          {
+            "index": 3,
+            "text": "observavel e resiliente."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Sistema distribuido local pronto; integracao externa observavel e resiliente.",
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "typeface": "Aptos",
+            "color": "#2563EB",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Sistema distribuido local pronto; integracao externa observavel e resiliente.",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#2563EB",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

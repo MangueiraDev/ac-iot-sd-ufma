@@ -263,3 +263,46 @@ cidadesinteligentes.lsdi.ufma.br (200.137.134.98:443)
 → Timeout no SSL handshake — servidor inacessível
 → Contatar equipe LSDi/UFMA para verificar status
 ```
+
+---
+
+## Atualizacao complementar — 15/06/2026
+
+Esta atualizacao nao substitui a avaliacao anterior; ela registra a evolucao
+apos nova rodada de ajustes e validacoes.
+
+### Estado observado apos ajustes
+
+- A plataforma InterSCity voltou a responder via proxy do web container.
+- Consultas testadas:
+  - `/api/ic/catalog/capabilities` retornando `HTTP 200`;
+  - `/api/ic/collector/resources/00000000-0000-4000-8000-000000000101/data/last`
+    retornando `HTTP 200`.
+- A bridge passou a publicar metricas reais em
+  `ac-iot/system/bridge_metrics`.
+- Amostra observada da bridge:
+  - `sent`: 956 envios;
+  - `sent_per_sec`: aproximadamente 17 envios/s;
+  - `request_bytes`: aproximadamente 646 KB;
+  - `queue_size`: 534;
+  - `latency_ms_avg`: 442 ms;
+  - `last_status`: 201.
+
+### Impacto na escalabilidade
+
+- O dashboard agora mede a comunicacao real Bridge -> InterSCity, e nao apenas
+  pequenas consultas feitas pelo navegador.
+- O topico retido de metricas permite observabilidade imediata apos abrir a
+  pagina.
+- A fila coalescente continua reduzindo backlog, mantendo somente a ultima
+  leitura pendente por recurso.
+- O limite `MAX_INTERSCITY_RPS=20` permanece como protecao da API remota.
+
+### Pendencias atualizadas
+
+- [ ] Persistir telemetria quando InterSCity estiver indisponivel por longos
+      periodos.
+- [ ] Exportar as metricas da bridge tambem em formato Prometheus quando a
+      arquitetura migrar para Kubernetes.
+- [ ] Definir SLA esperado para a instancia InterSCity UFMA ou usar instancia
+      dedicada.
