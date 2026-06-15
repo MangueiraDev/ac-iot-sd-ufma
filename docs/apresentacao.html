@@ -9,6 +9,152 @@
     /* Default styles provided by pandoc.
     ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
     */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
     span.smallcaps{font-variant: small-caps;}
     div.columns{display: flex; gap: min(4vw, 1.5em);}
     div.column{flex: auto; overflow-x: auto;}
@@ -89,7 +235,6 @@
     code span.vs { color: #4070a0; } /* VerbatimString */
     code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
-  <link rel="stylesheet" href="-" />
 </head>
 <body>
 <header id="title-block-header">
@@ -130,6 +275,69 @@ sharding por pod  ──► WebSocket 9001      ◄──  MQTT WebSocket
                     catalog · adaptor · collector</code></pre>
 <p><strong>Tópicos MQTT:</strong> <code>ac-iot/+/sensores</code> ·
 <code>ac-iot/{sala}/comando</code> · <code>ac-iot/all/comando</code></p>
+<hr />
+<h2 id="b-sistema-atualizado-1-000-salas-interscity">02B · SISTEMA
+ATUALIZADO — 1 000 SALAS + INTERSCITY</h2>
+<h3 id="telemetria-ponta-a-ponta-validada.">Telemetria ponta a ponta
+validada.</h3>
+<pre><code>1 000 salas simuladas
+   │ ac-iot/+/sensores
+   ▼
+Mosquitto MQTT ── WebSocket ──► Painel + Dashboard
+   │ $share/bridge-workers/ac-iot/+/sensores
+   ▼
+Bridge C++ assíncrona
+   │ 8 workers · fila 20 000 · limite 20 req/s
+   ▼ HTTPS REST
+InterSCity UFMA
+   catalog · adaptor · collector</code></pre>
+<p><strong>Evidências registradas em 15/06/2026</strong></p>
+<table>
+<thead>
+<tr>
+<th>Métrica</th>
+<th style="text-align: right;">Valor observado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Salas online</td>
+<td style="text-align: right;">1 000</td>
+</tr>
+<tr>
+<td>Envios recentes ao InterSCity</td>
+<td style="text-align: right;">~17/s</td>
+</tr>
+<tr>
+<td>Telemetrias enviadas na amostra</td>
+<td style="text-align: right;">956</td>
+</tr>
+<tr>
+<td>Falhas na amostra</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>Tráfego enviado ao InterSCity</td>
+<td style="text-align: right;">~646 KB</td>
+</tr>
+<tr>
+<td>Latência média</td>
+<td style="text-align: right;">442 ms</td>
+</tr>
+<tr>
+<td>Último status do Adaptor</td>
+<td style="text-align: right;">HTTP 201</td>
+</tr>
+<tr>
+<td>Consulta ao Collector</td>
+<td style="text-align: right;">HTTP 200</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Destaque:</strong> o dashboard passou a consumir métricas
+reais publicadas pela bridge em
+<code>ac-iot/system/bridge_metrics</code>, e não apenas sondagens feitas
+pelo navegador.</p>
 <hr />
 <h2 id="o-que-foi-implementado">03 · O QUE FOI IMPLEMENTADO</h2>
 <h3 id="evoluções-desde-o-protótipo-01.">Evoluções desde o protótipo
@@ -288,14 +496,14 @@ conforme o guia técnico UFMA — validada no código.</h3>
 </tbody>
 </table>
 <p><strong>Payload enviado ao Adaptor</strong></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode json"><code class="sourceCode json"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;data&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;temperatura&quot;</span><span class="fu">:</span>  <span class="ot">[</span><span class="fu">{</span><span class="dt">&quot;value&quot;</span><span class="fu">:</span> <span class="fl">24.1</span><span class="fu">,</span> <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-06-10T22:00:00Z&quot;</span><span class="fu">}</span><span class="ot">]</span><span class="fu">,</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;umidade&quot;</span><span class="fu">:</span>      <span class="ot">[</span><span class="fu">{</span><span class="dt">&quot;value&quot;</span><span class="fu">:</span> <span class="fl">53.0</span><span class="fu">,</span> <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-06-10T22:00:00Z&quot;</span><span class="fu">}</span><span class="ot">]</span><span class="fu">,</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;luminosidade&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="fu">{</span><span class="dt">&quot;value&quot;</span><span class="fu">:</span> <span class="dv">612</span><span class="fu">,</span>  <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-06-10T22:00:00Z&quot;</span><span class="fu">}</span><span class="ot">]</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;data&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;temperatura&quot;</span><span class="fu">:</span>  <span class="ot">[</span><span class="fu">{</span><span class="dt">&quot;value&quot;</span><span class="fu">:</span> <span class="fl">24.1</span><span class="fu">,</span> <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-06-10T22:00:00Z&quot;</span><span class="fu">}</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;umidade&quot;</span><span class="fu">:</span>      <span class="ot">[</span><span class="fu">{</span><span class="dt">&quot;value&quot;</span><span class="fu">:</span> <span class="fl">53.0</span><span class="fu">,</span> <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-06-10T22:00:00Z&quot;</span><span class="fu">}</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;luminosidade&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="fu">{</span><span class="dt">&quot;value&quot;</span><span class="fu">:</span> <span class="dv">612</span><span class="fu">,</span>  <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-06-10T22:00:00Z&quot;</span><span class="fu">}</span><span class="ot">]</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
 <p><strong>Status atual do servidor UFMA</strong> &gt;
 <code>200.137.134.98:443</code> — timeout no SSL handshake. &gt; O
 sistema local funciona; IC retoma automaticamente quando o servidor
@@ -305,11 +513,6 @@ voltar.</p>
 <h3 id="todos-os-componentes-locais-operacionais.">Todos os componentes
 locais operacionais.</h3>
 <table>
-<colgroup>
-<col style="width: 27%" />
-<col style="width: 45%" />
-<col style="width: 27%" />
-</colgroup>
 <thead>
 <tr>
 <th>Componente</th>
@@ -331,7 +534,7 @@ locais operacionais.</h3>
 <tr>
 <td>Bridge C++</td>
 <td style="text-align: center;">✅</td>
-<td>8 workers · modo degradado ativo</td>
+<td>8 workers · métricas reais publicadas no MQTT</td>
 </tr>
 <tr>
 <td>Painel Web (Nginx)</td>
@@ -340,13 +543,13 @@ locais operacionais.</h3>
 </tr>
 <tr>
 <td>InterSCity UFMA</td>
-<td style="text-align: center;">❌</td>
-<td>SSL handshake timeout — servidor UFMA fora do ar</td>
+<td style="text-align: center;">✅</td>
+<td>Catalog/Collector HTTP 200 · Adaptor HTTP 201</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Integração InterSCity: correta — bloqueada por
-indisponibilidade externa.</strong></p>
+<p><strong>Integração InterSCity: validada ponta a ponta pela bridge e
+pelo painel.</strong></p>
 <hr />
 <h2 id="gantt-cronograma">08 · GANTT — CRONOGRAMA</h2>
 <h3 id="implementação-prevista-realizada-e-replanejada.">Implementação
@@ -546,8 +749,8 @@ curso</p>
 <h2 id="próximos-passos">09 · PRÓXIMOS PASSOS</h2>
 <h3 id="para-fechar-a-demonstração-validada.">Para fechar a demonstração
 validada.</h3>
-<p><strong>1. Validar integração InterSCity</strong> Aguardar
-restabelecimento do servidor UFMA · confirmar telemetria no Data
+<p><strong>1. Evidenciar integração InterSCity</strong> Registrar prints
+do dashboard · <code>HTTP 201</code> no Adaptor · consulta no Data
 Collector</p>
 <p><strong>2. Testar escala</strong> Validar estabilidade com 1 000
 salas · medir consumo de mensagens e latência bridge → IC</p>

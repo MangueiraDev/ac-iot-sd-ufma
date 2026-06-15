@@ -1,0 +1,21 @@
+task mode: create
+primary deck-profile: engineering-platform
+secondary gates: product-platform clarity for operational dashboard narrative
+required proof objects:
+- Architecture map showing simulator, MQTT broker, web dashboard, bridge workers and InterSCity.
+- InterSCity communication flow with endpoints and current health semantics.
+- Metrics slide tied to the runtime system.
+- Distributed-system slide showing independent services and Kubernetes scaling path.
+source/asset requirements:
+- Use only repository/runtime metrics and simple editable diagrams.
+- No unofficial UFMA/InterSCity logos; use text labels and neutral iconography.
+brand authenticity constraints:
+- Do not invent logos or official marks.
+- Use color/typography only as visual identity.
+profile-specific QA gates:
+- Connector direction must be technically correct.
+- Metrics must distinguish live local operation from current InterSCity remote instability.
+- Slides must remain readable at thumbnail/contact-sheet size.
+known missing inputs:
+- No official presentation template provided.
+- InterSCity remote API is unstable at verification time; deck should state this precisely.

@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Guia breve dos slides — AC-IoT UFMA</title>
+  <style>
+    @page { size: A4; margin: 18mm 16mm; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: #172033;
+      background: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 11.5pt;
+      line-height: 1.45;
+    }
+    h1, h2, h3, p { margin: 0; }
+    .cover {
+      border-bottom: 3px solid #2563eb;
+      padding-bottom: 18px;
+      margin-bottom: 20px;
+    }
+    .eyebrow {
+      color: #2563eb;
+      font-size: 10pt;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 28pt;
+      line-height: 1.08;
+      margin-bottom: 12px;
+    }
+    .subtitle {
+      color: #53647a;
+      max-width: 650px;
+      font-size: 12.5pt;
+    }
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 18px 0 22px;
+    }
+    .metric {
+      border: 1px solid #d8e0eb;
+      border-left: 5px solid #2563eb;
+      padding: 10px 12px;
+      min-height: 68px;
+    }
+    .metric strong {
+      display: block;
+      color: #132033;
+      font-size: 18pt;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .metric span {
+      color: #53647a;
+      font-size: 9.5pt;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+    .note {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-left: 5px solid #d97706;
+      padding: 12px 14px;
+      margin-bottom: 22px;
+      color: #3f2a12;
+    }
+    .slide {
+      break-inside: avoid;
+      border-top: 1px solid #d8e0eb;
+      padding: 14px 0 12px;
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 18px;
+    }
+    .num {
+      color: #2563eb;
+      font-size: 24pt;
+      font-weight: 800;
+      line-height: 1;
+    }
+    h2 {
+      font-size: 16pt;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+    .claim {
+      color: #132033;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .talk {
+      color: #46576d;
+      margin-bottom: 7px;
+    }
+    .emphasis {
+      color: #0f766e;
+      font-weight: 700;
+    }
+    ul {
+      margin: 6px 0 0 18px;
+      padding: 0;
+      color: #46576d;
+    }
+    li { margin: 2px 0; }
+    .footer {
+      margin-top: 18px;
+      padding-top: 10px;
+      border-top: 1px solid #d8e0eb;
+      color: #66758a;
+      font-size: 9.5pt;
+    }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <div class="eyebrow">Guia breve dos slides</div>
+    <h1>AC-IoT UFMA — sistema distribuído com InterSCity</h1>
+    <p class="subtitle">
+      Documento de apoio para apresentar o PPTX. Resume a mensagem principal de cada slide,
+      o que deve ser explicado oralmente e o cuidado sobre o estado atual da integração remota.
+    </p>
+  </section>
+
+  <section class="meta">
+    <div class="metric"><strong>9</strong><span>slides no deck</span></div>
+    <div class="metric"><strong>1.000</strong><span>salas simuladas</span></div>
+    <div class="metric"><strong>61.330</strong><span>envios IC históricos</span></div>
+  </section>
+
+  <div class="note">
+    <strong>Leitura correta do status:</strong> o sistema local está operando em tempo real via MQTT.
+    A bridge possui histórico de envio ao InterSCity, mas na última verificação a API remota estava
+    instável, com <code>last_ok=false</code> e taxa atual de envio zerada.
+  </div>
+
+  <section class="slide">
+    <div class="num">01</div>
+    <div>
+      <h2>Capa — AC-IoT UFMA</h2>
+      <p class="claim">Apresenta a proposta: operação distribuída para 1.000 salas.</p>
+      <p class="talk">Use este slide para situar o público: o sistema monitora e controla ar-condicionado e iluminação com telemetria MQTT, painel web e integração InterSCity.</p>
+      <p class="emphasis">Mensagem-chave: não é só uma tela; é uma plataforma operacional distribuída.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="num">02</div>
+    <div>
+      <h2>Objetivo</h2>
+      <p class="claim">Mostra o problema operacional e a resposta do sistema.</p>
+      <p class="talk">Explique que a automação reduz ação manual sala a sala, enquanto o painel concentra exceções, alertas e comandos em massa.</p>
+      <ul>
+        <li>Tempo real local via MQTT.</li>
+        <li>Controle por presença, temperatura e setpoints.</li>
+        <li>Estado InterSCity visível sem mascarar instabilidade.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="num">03</div>
+    <div>
+      <h2>Arquitetura</h2>
+      <p class="claim">Evidencia os componentes distribuídos e suas responsabilidades.</p>
+      <p class="talk">Percorra o fluxo: simulador publica sensores, Mosquitto distribui mensagens, web consome em tempo real, bridge envia para InterSCity.</p>
+      <p class="emphasis">Destaque que o acoplamento principal é por mensageria, não por chamadas diretas entre todos os módulos.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="num">04</div>
+    <div>
+      <h2>Comunicação com InterSCity</h2>
+      <p class="claim">A bridge traduz MQTT em chamadas REST para Catalog, Adaptor e Collector.</p>
+      <p class="talk">Explique que o InterSCity não é consultado diretamente por cada sensor. A bridge centraliza o envio, aplica fila, workers, rate limit e retentativas.</p>
+      <ul>
+        <li>Catalog: capacidades e recursos.</li>
+        <li>Adaptor: telemetria atual.</li>
+        <li>Collector: consulta da última leitura.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="num">05</div>
+    <div>
+      <h2>Painel operacional</h2>
+      <p class="claim">Mostra como o operador enxerga 1.000 salas sem perder contexto.</p>
+      <p class="talk">Apresente blocos, filtros, busca, comando em massa e sala selecionada. A borda azul indica atividade normal; a vermelha indica alerta, como temperatura crítica.</p>
+      <p class="emphasis">O painel foi pensado para operar por blocos e exceções, não por inspeção manual de cada sala.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="num">06</div>
+    <div>
+      <h2>Métricas do sistema</h2>
+      <p class="claim">Conecta dados reais do runtime com o diagnóstico de saúde.</p>
+      <p class="talk">Explique a separação entre operação local e integração externa: MQTT local está vivo; InterSCity tem histórico, mas está instável no momento da verificação.</p>
+      <ul>
+        <li>61.330 envios históricos ao InterSCity.</li>
+        <li>2.966 falhas acumuladas.</li>
+        <li>fila atual de 1.000 itens em capacidade de 20.000.</li>
+        <li><code>last_ok=false</code> na amostra atual.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="num">07</div>
+    <div>
+      <h2>Lógica operacional</h2>
+      <p class="claim">Resume a automação de presença, sala vazia e temperatura crítica.</p>
+      <p class="talk">Mostre que a sala ocupada liga luz e avalia AC após alguns segundos; sala vazia desliga luz e AC. Temperatura crítica exige presença e condição inadequada do AC.</p>
+      <p class="emphasis">A automação trata o normal; o operador corrige exceções.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="num">08</div>
+    <div>
+      <h2>Sistemas distribuídos</h2>
+      <p class="claim">Justifica por que a solução caracteriza um sistema distribuído.</p>
+      <p class="talk">Aponte a separação entre serviços independentes, broker, bridge replicável, filas, rate limit e caminho de escala com Kubernetes/HPA.</p>
+      <ul>
+        <li>Produtores e consumidores separados por MQTT.</li>
+        <li>Bridge com workers HTTP e fila assíncrona.</li>
+        <li>Escalabilidade por pods e replicas.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="num">09</div>
+    <div>
+      <h2>Status e próximos passos</h2>
+      <p class="claim">Fecha com uma avaliação honesta do estado atual.</p>
+      <p class="talk">Reforce: local OK, MQTT ao vivo, InterSCity instável no momento. O sistema continua operando e a integração externa é observável.</p>
+      <p class="emphasis">Próximos passos: coletar evidências quando o InterSCity voltar, criar alarme de fila/taxa zerada e executar teste de carga com múltiplas réplicas.</p>
+    </div>
+  </section>
+
+  <p class="footer">
+    Arquivos relacionados: <code>docs/ac-iot-ufma-intercity.pptx</code> e dashboard em
+    <code>http://localhost:8080/dashboard.html</code>.
+  </p>
+</body>
+</html>

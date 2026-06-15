@@ -1,0 +1,19 @@
+{
+  "rooms": 1000,
+  "blocks": 40,
+  "roomsPerBlock": 25,
+  "mqttTopicSensors": "ac-iot/+/sensores",
+  "bridgeMetricsTopic": "ac-iot/system/bridge_metrics",
+  "httpWorkers": 8,
+  "queueMax": 20000,
+  "maxRps": 20,
+  "icSent": 61330,
+  "icFailed": 2966,
+  "icAttempted": 64296,
+  "icQueue": 1000,
+  "icLastOk": false,
+  "icLastStatus": 0,
+  "icSentPerSec": 0,
+  "icBytesPerSec": 0,
+  "icLatencyAvgMs": 3154
+}

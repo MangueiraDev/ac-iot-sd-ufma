@@ -41,6 +41,43 @@ sharding por pod  ──► WebSocket 9001      ◄──  MQTT WebSocket
 
 ---
 
+## 02B · SISTEMA ATUALIZADO — 1 000 SALAS + INTERSCITY
+
+### Telemetria ponta a ponta validada.
+
+```
+1 000 salas simuladas
+   │ ac-iot/+/sensores
+   ▼
+Mosquitto MQTT ── WebSocket ──► Painel + Dashboard
+   │ $share/bridge-workers/ac-iot/+/sensores
+   ▼
+Bridge C++ assíncrona
+   │ 8 workers · fila 20 000 · limite 20 req/s
+   ▼ HTTPS REST
+InterSCity UFMA
+   catalog · adaptor · collector
+```
+
+**Evidências registradas em 15/06/2026**
+
+| Métrica | Valor observado |
+|---|---:|
+| Salas online | 1 000 |
+| Envios recentes ao InterSCity | ~17/s |
+| Telemetrias enviadas na amostra | 956 |
+| Falhas na amostra | 0 |
+| Tráfego enviado ao InterSCity | ~646 KB |
+| Latência média | 442 ms |
+| Último status do Adaptor | HTTP 201 |
+| Consulta ao Collector | HTTP 200 |
+
+**Destaque:** o dashboard passou a consumir métricas reais publicadas pela
+bridge em `ac-iot/system/bridge_metrics`, e não apenas sondagens feitas pelo
+navegador.
+
+---
+
 ## 03 · O QUE FOI IMPLEMENTADO
 
 ### Evoluções desde o protótipo 01.
@@ -176,11 +213,11 @@ Simulador C++ ──MQTT──► Bridge C++ ──HTTPS REST──► InterSCit
 |---|:---:|---|
 | Simulador C++ | ✅ | 1 000 salas · publicação a cada 30 s |
 | Mosquitto | ✅ | TCP 1883 · WebSocket 9001 · healthy |
-| Bridge C++ | ✅ | 8 workers · modo degradado ativo |
+| Bridge C++ | ✅ | 8 workers · métricas reais publicadas no MQTT |
 | Painel Web (Nginx) | ✅ | localhost:8080 · healthy |
-| InterSCity UFMA | ❌ | SSL handshake timeout — servidor UFMA fora do ar |
+| InterSCity UFMA | ✅ | Catalog/Collector HTTP 200 · Adaptor HTTP 201 |
 
-**Integração InterSCity: correta — bloqueada por indisponibilidade externa.**
+**Integração InterSCity: validada ponta a ponta pela bridge e pelo painel.**
 
 ---
 
@@ -214,8 +251,8 @@ Simulador C++ ──MQTT──► Bridge C++ ──HTTPS REST──► InterSCit
 
 ### Para fechar a demonstração validada.
 
-**1. Validar integração InterSCity**
-Aguardar restabelecimento do servidor UFMA · confirmar telemetria no Data Collector
+**1. Evidenciar integração InterSCity**
+Registrar prints do dashboard · `HTTP 201` no Adaptor · consulta no Data Collector
 
 **2. Testar escala**
 Validar estabilidade com 1 000 salas · medir consumo de mensagens e latência bridge → IC

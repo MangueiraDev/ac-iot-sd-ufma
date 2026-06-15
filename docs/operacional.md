@@ -363,3 +363,66 @@ docker image prune -af && \
 docker compose -f docker-compose.local.yml up -d --build && \
 docker compose -f docker-compose.local.yml ps -a
 ```
+
+---
+
+## Atualizacao complementar — 15/06/2026
+
+Esta secao preserva o historico anterior e registra apenas as atualizacoes
+recentes feitas no sistema web, simulador e bridge.
+
+### Logica operacional das salas
+
+- Presenca detectada liga a luz imediatamente.
+- Com presenca continua, o ar-condicionado liga apos alguns segundos.
+- Sala vazia desliga luz e ar-condicionado apos o atraso operacional.
+- Temperatura critica passa a considerar exclusivamente salas com presenca,
+  temperatura pelo menos 30% acima do `setpoint_ac`, e ar desligado ou com
+  setpoint alto.
+- O simulador gera salas criticas em volume controlado, na faixa aproximada de
+  3% a 5% do total de salas.
+- Quando o operador aplica correcao por comando, a sala deixa de ser forcada
+  como critica por uma janela temporaria, evitando que o simulador desfaca a
+  intervencao imediatamente.
+
+### Painel operacional
+
+- Adicionada opcao para exibir apenas salas com temperatura critica nos blocos
+  operacionais.
+- O escopo `Temp. critica` foi adicionado aos comandos em massa.
+- A consulta InterSCity foi retirada do painel de comando em massa e movida
+  para o painel **Sala Selecionada**, reduzindo ambiguidade.
+- A consulta sob demanda usa a sala selecionada na tabela e exibe retorno
+  normalizado em campos de temperatura, umidade, luminosidade, presenca,
+  status do ar e status da luz.
+- As consultas web ao InterSCity usam `cache: no-store`, e respostas `304` no
+  check de catalogo nao sao mais tratadas como falha.
+
+### Dashboard do sistema
+
+- Criada pagina `dashboard.html`, acessivel pelo link **Dashboard** no topo do
+  painel operacional.
+- O dashboard exibe metricas de MQTT, salas online, temperatura critica,
+  trafego observado e metricas da bridge para InterSCity.
+- Os graficos de MQTT e trafego foram alterados para media movel de 60 s,
+  evitando leitura enganosa de `0 msg/s` entre ciclos do simulador.
+- A comunicacao real com InterSCity agora e medida pela bridge e publicada via
+  MQTT em `ac-iot/system/bridge_metrics`.
+- O topico de metricas da bridge e retido, permitindo que a pagina receba o
+  ultimo estado imediatamente ao abrir.
+
+### Bridge MQTT -> InterSCity
+
+- A bridge publica metricas operacionais reais:
+  - envios ao InterSCity;
+  - falhas;
+  - fila atual e limite de fila;
+  - bytes enviados e recebidos;
+  - latencia media e maxima;
+  - status HTTP mais recente;
+  - taxa recente de envios por segundo.
+- Validacao registrada em 15/06/2026:
+  - InterSCity respondendo via proxy web com `HTTP 200`;
+  - Data Collector respondendo para sala `00000000-0000-4000-8000-000000000101`;
+  - bridge enviando telemetria com `HTTP 201`;
+  - dashboard exibindo `InterSCity via bridge`.

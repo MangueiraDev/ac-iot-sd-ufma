@@ -6,6 +6,8 @@ const MQTT_PORT = window.location.port
   : (window.location.protocol === 'https:' ? 443 : 80);
 const MQTT_PATH = '/mqtt';
 const MQTT_TOPIC = 'ac-iot/+/sensores';
+const BRIDGE_METRICS_TOPIC = 'ac-iot/system/bridge_metrics';
+const INTERSCITY_BASE_URL = 'https://cidadesinteligentes.lsdi.ufma.br/interscity_lh';
 const DEFAULT_ZONE_SIZE = 25;
 const OFFLINE_AFTER_MS = 70000;
 const CRITICAL_TEMP_FACTOR = 1.3;
@@ -25,6 +27,8 @@ let selectedZone = null;
 let selectedRoom = null;
 let icEverOk = false;
 let lastIcOk = false;
+let lastIcHealthyAt = 0;
+let lastBridgeMetrics = null;
 let received = 0;
 let lastMqttAt = 0;
 
@@ -143,6 +147,31 @@ function roomUuid(roomId) {
   const idx = roomIndex(roomId);
   if (!idx) return null;
   return '00000000-0000-4000-8000-' + String(100 + idx).padStart(12, '0');
+}
+
+function icResourcePath(roomId) {
+  const uuid = roomUuid(roomId);
+  return uuid ? `/collector/resources/${uuid}/data/last` : null;
+}
+
+function icProxyUrl(roomId) {
+  const path = icResourcePath(roomId);
+  return path ? `/api/ic${path}` : null;
+}
+
+function icPublicUrl(roomId) {
+  const path = icResourcePath(roomId);
+  return path ? `${INTERSCITY_BASE_URL}${path}` : null;
+}
+
+function updateICOpenLink() {
+  const link = document.getElementById('btn-ic-open');
+  if (!link) return;
+  const url = selectedRoom ? icPublicUrl(selectedRoom) : `${INTERSCITY_BASE_URL}/catalog/resources`;
+  link.href = url || `${INTERSCITY_BASE_URL}/catalog/resources`;
+  link.title = selectedRoom
+    ? `Abrir ${roomLabel(selectedRoom)} no InterSCity`
+    : 'Abrir catalogo do InterSCity';
 }
 
 function icCaps(raw) {
@@ -282,12 +311,34 @@ function refreshMqttStatus() {
   }
 }
 
-function setICStatus(ok) {
+function setICStatus(ok, detail = '') {
   lastIcOk = ok;
+  if (ok) lastIcHealthyAt = Date.now();
   const dot = document.getElementById('dot-ic');
   dot.className = 'dot ' + (ok ? 'ok' : (icEverOk ? 'warn' : 'idle'));
-  document.getElementById('lbl-ic').textContent = ok ? 'InterSCity conectado' : 'InterSCity off';
+  document.getElementById('lbl-ic').textContent = detail || (ok ? 'InterSCity conectado' : 'InterSCity off');
   if (ok) icEverOk = true;
+}
+
+function bridgeShowsICActive() {
+  return !!lastBridgeMetrics?.last_ok;
+}
+
+function bridgeHasICHistory() {
+  if (!lastBridgeMetrics) return false;
+  return Number(lastBridgeMetrics.sent || 0) > 0 || Number(lastBridgeMetrics.total_attempted || 0) > 0;
+}
+
+function handleBridgeMetrics(data) {
+  lastBridgeMetrics = data;
+  const sent = Number(data.sent || 0);
+  const queue = Number(data.queue_size || 0);
+  if (data.last_ok) {
+    setICStatus(true, sent ? `InterSCity via bridge · ${sent}` : `InterSCity via bridge · fila ${queue}`);
+  } else if (sent || Number(data.total_attempted || 0)) {
+    icEverOk = sent > 0;
+    setICStatus(false, `InterSCity instavel · fila ${queue}`);
+  }
 }
 
 async function checkInterSCityStatus({ log = false } = {}) {
@@ -303,7 +354,17 @@ async function checkInterSCityStatus({ log = false } = {}) {
     if (log || changed) addLog('ic', 'InterSCity conectado');
   } catch (e) {
     const changed = lastIcOk;
-    setICStatus(false);
+    if (bridgeShowsICActive() || Date.now() - lastIcHealthyAt < 90000) {
+      setICStatus(true, 'InterSCity via bridge');
+      if (log) addLog('ic', `InterSCity validado pelo bridge; catalogo nao respondeu: ${e.message}`);
+      return;
+    }
+    if (bridgeHasICHistory()) {
+      setICStatus(false, 'InterSCity instavel');
+      if (log || changed) addLog('warn', `InterSCity instavel: ${e.message}`);
+      return;
+    }
+    setICStatus(false, 'InterSCity sem resposta');
     if (log || changed) addLog('warn', `InterSCity indisponivel: ${e.message}`);
   }
 }
@@ -332,6 +393,10 @@ function connect() {
     client.onMessageArrived = ({ destinationName, payloadString }) => {
       try {
         const data = JSON.parse(payloadString);
+        if (destinationName === BRIDGE_METRICS_TOPIC) {
+          handleBridgeMetrics(data);
+          return;
+        }
         const id = data.id_sala || destinationName.split('/')[1];
         const previous = rooms[id];
         rooms[id] = { ...previous, ...data, _seenAt: Date.now() };
@@ -355,6 +420,7 @@ function connect() {
       onSuccess: () => {
         setMQTT(true);
         client.subscribe(MQTT_TOPIC);
+        client.subscribe(BRIDGE_METRICS_TOPIC);
         addLog('ok', `MQTT conectado em ${url}`);
       },
       onFailure: ({ errorMessage }) => {
@@ -507,6 +573,7 @@ function renderTable(ids) {
 function renderSelected() {
   const body = document.getElementById('selected-body');
   const title = document.getElementById('selected-title');
+  updateICOpenLink();
   if (!selectedRoom || !rooms[selectedRoom]) {
     title.textContent = 'nenhuma sala';
     body.innerHTML = '<div class="empty-detail">Selecione uma sala na tabela para consultar o InterSCity.</div>';
@@ -528,8 +595,9 @@ function renderSelected() {
     </div>
     <div class="ic-detail">
       <strong>InterSCity</strong>
-      <div class="ic-state" id="ic-query-state">${ic ? 'Ultima consulta carregada.' : 'Clique em Consultar IC para buscar a leitura registrada.'}</div>
+      <div class="ic-state" id="ic-query-state">${ic ? 'Ultima consulta carregada.' : 'Clique em Consultar leitura para buscar a leitura registrada.'}</div>
       ${ic ? icSummary(ic) : '<div class="empty-detail">Sem consulta carregada para esta sala.</div>'}
+      <a class="ic-link" href="${icPublicUrl(selectedRoom) || INTERSCITY_BASE_URL}" target="_blank" rel="noopener">Abrir leitura JSON no InterSCity</a>
     </div>
   `;
 }
@@ -592,7 +660,7 @@ window.requestSelectedIC = async () => {
   if (state) state.textContent = `Consultando ${roomLabel(roomId)}...`;
   if (button) button.disabled = true;
   try {
-    const res = await fetch(`/api/ic/collector/resources/${uuid}/data/last`, {
+    const res = await fetch(icProxyUrl(roomId), {
       cache: 'no-store',
       signal: AbortSignal.timeout(10000),
     });
@@ -602,7 +670,6 @@ window.requestSelectedIC = async () => {
     if (state) state.textContent = `${roomLabel(roomId)} atualizada via InterSCity.`;
     addLog('ic', `${roomLabel(roomId)} atualizado via InterSCity`);
   } catch (e) {
-    setICStatus(false);
     if (state) state.textContent = `Falha na consulta: ${e.message}`;
     addLog('warn', `InterSCity falhou para ${roomLabel(roomId)}: ${e.message}`);
   } finally {

@@ -137,3 +137,41 @@ gantt
 - Adicionar corrente, potência e energia.
 - Implementar IR/relé.
 - Consolidar documentação final.
+
+---
+
+## 7. Atualizacao complementar — 15/06/2026
+
+Registro adicional sem substituicao do cronograma anterior.
+
+### Concluido nesta atualizacao
+
+- Ajuste da logica operacional de presenca:
+  - luz ligada imediatamente com presenca;
+  - ar-condicionado ligado apos atraso;
+  - luz e ar desligados apos sala vazia por alguns segundos.
+- Regra de temperatura critica revisada:
+  - somente com presenca;
+  - temperatura >= 130% do `setpoint_ac`;
+  - ar desligado ou com setpoint alto;
+  - geracao controlada em torno de 3% a 5% das salas.
+- Filtro visual para exibir salas com temperatura critica.
+- Escopo de comando em massa para salas com temperatura critica.
+- Nova pagina `dashboard.html` com graficos e metricas do sistema.
+- Instrumentacao da bridge com metricas reais Bridge -> InterSCity.
+- Reorganizacao da consulta InterSCity por sala no painel **Sala Selecionada**.
+
+### Evidencias tecnicas registradas
+
+- Simulador medido com 33 salas criticas em 1000 salas, equivalente a 3,3%.
+- InterSCity consultado via proxy web com `HTTP 200`.
+- Bridge publicando `ac-iot/system/bridge_metrics`.
+- Bridge enviando telemetria para InterSCity com `HTTP 201`.
+- Dashboard exibindo media movel MQTT e metricas reais da bridge.
+
+### Replanejamento imediato
+
+- [ ] Capturar prints finais do painel operacional e dashboard.
+- [ ] Consolidar evidencias de comandos MQTT, consulta InterSCity e metricas da
+      bridge.
+- [ ] Atualizar apresentacao somente apos congelar a versao final da interface.
