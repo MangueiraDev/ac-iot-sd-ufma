@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AC-IoT UFMA · Operacao em Escala</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div>
+      <h1>AC-IoT UFMA</h1>
+      <p>Centro de operacao para 1 000 salas · MQTT · InterSCity · Kubernetes</p>
+    </div>
+    <div class="top-status">
+      <a class="nav-link" href="dashboard.html">Dashboard</a>
+      <div class="status-pill"><span class="dot" id="dot-mqtt"></span><span id="lbl-mqtt">MQTT</span></div>
+      <div class="status-pill"><span class="dot" id="dot-ic"></span><span id="lbl-ic">InterSCity</span></div>
+      <div class="status-pill"><span id="footer-time">--:--:--</span></div>
+    </div>
+  </header>
+
+  <main class="ops-layout">
+    <section class="kpi-grid">
+      <div class="kpi"><span id="kpi-total">0</span><small>salas online</small></div>
+      <div class="kpi"><span id="kpi-offline">0</span><small>sem heartbeat</small></div>
+      <div class="kpi"><span id="kpi-presence">0</span><small>com presenca</small></div>
+      <div class="kpi"><span id="kpi-ac">0</span><small>ar ligado</small></div>
+      <div class="kpi"><span id="kpi-light">0</span><small>luz ligada</small></div>
+      <div class="kpi"><span id="kpi-humidity">--</span><small>umidade media</small></div>
+      <div class="kpi"><span id="kpi-temp">--</span><small>temperatura media</small></div>
+      <div class="kpi kpi-danger">
+        <div class="kpi-pair">
+          <span id="kpi-hot">0</span>
+          <strong id="kpi-hot-avg">--</strong>
+        </div>
+        <small>temperatura critica</small>
+      </div>
+    </section>
+
+    <section class="ops-grid">
+      <section class="panel zones-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Blocos Operacionais</h2>
+            <span id="zone-caption">40 blocos · 25 salas por bloco</span>
+          </div>
+          <select id="zone-size" onchange="setZoneSize(this.value)">
+            <option value="25">25 salas/bloco</option>
+            <option value="50">50 salas/bloco</option>
+            <option value="100">100 salas/bloco</option>
+            <option value="critical-temp">Salas com temp. critica</option>
+          </select>
+        </div>
+        <div class="zone-board" id="zone-board"></div>
+      </section>
+
+      <aside class="panel command-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Comando em Massa</h2>
+            <span id="command-scope-label">escopo: todas as salas</span>
+          </div>
+        </div>
+        <div class="command-stack">
+          <label>Escopo
+            <select id="cmd-scope" onchange="syncScopeLabel()">
+              <option value="all">Todas as salas</option>
+              <option value="zone">Bloco selecionado</option>
+              <option value="filtered">Filtro atual</option>
+              <option value="critical-temp">Temp. critica</option>
+              <option value="selected">Sala selecionada</option>
+            </select>
+          </label>
+          <label class="range-field">
+            <span>Temperatura AC <strong id="cmd-temp-value">22C</strong></span>
+            <input id="cmd-temp" type="range" min="16" max="30" step="0.5" value="22" oninput="syncCommandRanges()">
+          </label>
+          <label class="range-field">
+            <span>Umidade <strong id="cmd-umid-value">55%</strong></span>
+            <input id="cmd-umid" type="range" min="30" max="90" step="1" value="55" oninput="syncCommandRanges()">
+          </label>
+          <label class="range-field">
+            <span>Luminosidade <strong id="cmd-lux-value">300 lx</strong></span>
+            <input id="cmd-lux" type="range" min="0" max="1000" step="10" value="300" oninput="syncCommandRanges()">
+          </label>
+          <div class="command-toggles">
+            <button id="cmd-auto" class="toggle active" onclick="toggleButton(this)">Auto</button>
+            <button id="cmd-ac" class="toggle" onclick="toggleButton(this)">AC</button>
+            <button id="cmd-light" class="toggle" onclick="toggleButton(this)">Luz</button>
+          </div>
+          <button class="primary" onclick="applyCommand()">Aplicar comando</button>
+        </div>
+      </aside>
+    </section>
+
+    <section class="ops-grid lower">
+      <section class="panel table-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Telemetria ao Vivo</h2>
+            <span id="table-caption">0 salas filtradas</span>
+          </div>
+          <div class="table-tools">
+            <input id="room-filter" type="search" placeholder="Filtrar sala ou bloco" oninput="setRoomFilter(this.value)">
+            <select id="status-filter" onchange="setStatusFilter(this.value)">
+              <option value="all">Todos estados</option>
+              <option value="alert">Somente alertas</option>
+              <option value="critical-temp">Temp. critica</option>
+              <option value="online">Online</option>
+              <option value="offline">Offline</option>
+              <option value="presence">Com presenca</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="room-table">
+            <thead>
+              <tr>
+                <th>Sala</th>
+                <th>Bloco</th>
+                <th>Temp</th>
+                <th>Umid</th>
+                <th>Lux</th>
+                <th>Pres.</th>
+                <th>AC</th>
+                <th>Modo</th>
+                <th>Heartbeat</th>
+              </tr>
+            </thead>
+            <tbody id="room-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <aside class="side-stack">
+        <section class="panel selected-panel">
+          <div class="panel-head">
+            <div>
+              <h2>Sala Selecionada</h2>
+              <span id="selected-title">nenhuma sala</span>
+            </div>
+            <button class="secondary" id="btn-ic-query" onclick="requestSelectedIC()">Consultar IC</button>
+          </div>
+          <div class="selected-body" id="selected-body"></div>
+        </section>
+
+        <section class="panel events-panel">
+          <div class="panel-head">
+            <div>
+              <h2>Log de Eventos</h2>
+              <span id="event-caption">ultimos eventos relevantes</span>
+            </div>
+            <button class="ghost" onclick="clearLog()">Limpar</button>
+          </div>
+          <div class="event-list" id="log-feed"></div>
+        </section>
+      </aside>
+    </section>
+  </main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,6 +1,0 @@
-Sources:
-- docs/RELATORIO_TECNICO_ATUAL.md: current system, components, MQTT topics, automation rules, InterSCity status.
-- docs/STATUS_IMPLEMENTACAO_GANTT_ATUAL.md: status table, completed/pending items, Gantt timing.
-
-Identity assets:
-- None embedded. Deck uses textual AC-IoT/UFMA references only.

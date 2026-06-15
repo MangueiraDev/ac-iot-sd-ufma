@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>AC-IoT UFMA — Sistema Atualizado</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="-" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">AC-IoT UFMA — Sistema Atualizado</h1>
+</header>
+<h1 id="ac-iot-ufma-apresentação-do-sistema-atualizado">AC-IoT UFMA —
+Apresentação do Sistema Atualizado</h1>
+<p><strong>Equipe:</strong> Cleila Monteiro · Guilherme de Aquino ·
+Nilton Mangueira · Raniere Mendes · Tereza Clarice</p>
+<hr />
+<h2 id="objetivo">01 · OBJETIVO</h2>
+<h3 id="ac-iot-ufma">AC-IoT UFMA</h3>
+<p>Monitoramento e controle inteligente de ar-condicionado em salas de
+aula com IoT, MQTT, automação e painel web operacional em larga
+escala.</p>
+<blockquote>
+<p>Esta apresentação cobre o estado <strong>atual</strong> do sistema
+após as evoluções implementadas sobre o protótipo 01.</p>
+</blockquote>
+<hr />
+<h2 id="arquitetura-atual">02 · ARQUITETURA ATUAL</h2>
+<h3
+id="o-fluxo-conecta-simulação-automação-painel-e-interscity-em-escala.">O
+fluxo conecta simulação, automação, painel e InterSCity — em
+escala.</h3>
+<pre><code>Simulador C++             Mosquitto            Painel Web (Nginx)
+1 000 salas           broker MQTT TCP 1883     cockpit operacional
+sharding por pod  ──► WebSocket 9001      ◄──  MQTT WebSocket
+                            │
+                            ▼
+                        Bridge C++
+                    8 workers HTTP
+                    rate limit 20 req/s
+                    fila 20 000 itens
+                            │ HTTPS REST
+                            ▼
+                    InterSCity UFMA
+                    catalog · adaptor · collector</code></pre>
+<p><strong>Tópicos MQTT:</strong> <code>ac-iot/+/sensores</code> ·
+<code>ac-iot/{sala}/comando</code> · <code>ac-iot/all/comando</code></p>
+<hr />
+<h2 id="o-que-foi-implementado">03 · O QUE FOI IMPLEMENTADO</h2>
+<h3 id="evoluções-desde-o-protótipo-01.">Evoluções desde o protótipo
+01.</h3>
+<p><strong>Simulador C++</strong> - Suporte a
+<code>ROOM_COUNT=1000</code> — geração dinâmica sem editar YAML -
+Sharding por pod: <code>SHARD_INDEX</code> / <code>SHARD_COUNT</code>
+lido do hostname K8s - UUID determinístico por índice — bridge e
+simulador usam a mesma fórmula - Física de automação: delays reais de AC
+(20 s presença / 10 s ausência)</p>
+<p><strong>Bridge C++</strong> - Pool de 8 workers HTTP paralelos
+(<code>HTTP_WORKERS</code>) - Fila assíncrona com backpressure
+(<code>QUEUE_MAX=20000</code>) - Rate limit configurável para o
+InterSCity (<code>MAX_INTERSCITY_RPS=20</code>) - Retry automático com
+backoff (3 tentativas, erros 5xx) - Modo degradado: IC offline no
+startup não para o bridge</p>
+<p><strong>Painel Web</strong> - Cockpit para 1 000 salas com blocos
+operacionais (B01…B40) - Tabela de Telemetria ao Vivo com filtro, busca
+e estados - Comando em massa por escopo: todas, bloco, filtro atual ou
+sala selecionada - Log de Eventos com alertas de temperatura crítica -
+Painel de setpoints de automação com sliders - Painel do operador para
+controle direto por sala</p>
+<p><strong>Infraestrutura</strong> -
+<code>docker-compose.local.yml</code> para desenvolvimento local -
+Manifests Kubernetes em <code>k8s/</code> (EMQX StatefulSet, bridge HPA,
+Ingress)</p>
+<hr />
+<h2 id="painel-operacional">04 · PAINEL OPERACIONAL</h2>
+<h3
+id="cockpit-projetado-para-operar-1-000-salas-em-tempo-real.">Cockpit
+projetado para operar 1 000 salas em tempo real.</h3>
+<p><strong>KPIs globais (topo)</strong></p>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Salas Online</th>
+<th style="text-align: center;">Sem Heartbeat</th>
+<th style="text-align: center;">Com Presença</th>
+<th style="text-align: center;">AR Ligado</th>
+<th style="text-align: center;">Luz Ligada</th>
+<th style="text-align: center;">Umidade Média</th>
+<th style="text-align: center;">Temp Média</th>
+<th style="text-align: center;">Temp Crítica</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">1 000</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">594</td>
+<td style="text-align: center;">602</td>
+<td style="text-align: center;">625</td>
+<td style="text-align: center;">54%</td>
+<td style="text-align: center;">24.0°C</td>
+<td style="text-align: center;">98 salas</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Blocos Operacionais</strong> - 40 blocos · 25 salas por bloco
+· temperatura média e alertas por bloco</p>
+<p><strong>Telemetria ao Vivo</strong> - Tabela com todas as salas:
+temp, umidade, lux, presença, AC, modo, última leitura - Filtro por
+nome/bloco e por estado (alerta, online, offline, com presença)</p>
+<p><strong>Comando em Massa</strong> - Escopo: todas as salas · bloco
+selecionado · filtro atual · sala individual - Sliders de setpoint AC,
+umidade, luminosidade - Toggles: Automático · AC · Luz</p>
+<p><strong>Sala Selecionada + Log de Eventos</strong> - Detalhe de
+leitura e consulta sob demanda ao InterSCity</p>
+<hr />
+<h2 id="simulador-e-escala">05 · SIMULADOR E ESCALA</h2>
+<h3 id="geração-automática-mantém-o-fluxo-ativo-e-escalável.">Geração
+automática mantém o fluxo ativo e escalável.</h3>
+<p><strong>Local (Docker Compose)</strong></p>
+<pre><code>ROOM_COUNT=1000  →  1 simulador · 1 000 salas · 1 shard</code></pre>
+<p><strong>Kubernetes (produção)</strong></p>
+<pre><code>StatefulSet x10  →  100 salas por pod · SHARD_INDEX=hostname</code></pre>
+<p><strong>Física simulada por sala</strong></p>
+<ol type="1">
+<li>Presença detectada → liga a luz</li>
+<li>Presença contínua por 20 s → avalia AC</li>
+<li>Temperatura/umidade acima do setpoint → liga AC</li>
+<li>Ausência por 10 s → desliga AC e luz</li>
+</ol>
+<blockquote>
+<p>Modo manual: <code>modo_ac = desativado</code> preserva comandos do
+operador.</p>
+</blockquote>
+<p><strong>Sem hardware físico:</strong> ESP32, Wokwi, SCT-013, IR e
+relé não são necessários neste escopo. O padrão de telemetria é idêntico
+ao de dispositivos reais.</p>
+<hr />
+<h2 id="bridge-e-interscity">06 · BRIDGE E INTERSCITY</h2>
+<h3
+id="integração-conforme-o-guia-técnico-ufma-validada-no-código.">Integração
+conforme o guia técnico UFMA — validada no código.</h3>
+<p><strong>Fluxo de dados</strong></p>
+<pre><code>Simulador C++ ──MQTT──► Bridge C++ ──HTTPS REST──► InterSCity UFMA
+                         8 workers                  catalog
+                         rate limit                 adaptor
+                         retry 3×                   collector</code></pre>
+<p><strong>Conformidade com o guia InterSCity</strong></p>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 27%" />
+<col style="width: 45%" />
+</colgroup>
+<thead>
+<tr>
+<th>Operação</th>
+<th>Endpoint</th>
+<th style="text-align: center;">Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Registrar capability</td>
+<td><code>POST /catalog/capabilities</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td>Registrar recurso</td>
+<td><code>POST /catalog/resources</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td>Enviar telemetria</td>
+<td><code>POST /adaptor/resources/{uuid}/data</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td>Consultar última leitura</td>
+<td><code>GET /collector/resources/{uuid}/data/last</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td>Timestamp ISO 8601 com <code>Z</code></td>
+<td><code>%Y-%m-%dT%H:%M:%SZ</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td>SSL verify off (regra UFMA)</td>
+<td><code>CURLOPT_SSL_VERIFYPEER=0</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Payload enviado ao Adaptor</strong></p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;data&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;temperatura&quot;</span><span class="fu">:</span>  <span class="ot">[</span><span class="fu">{</span><span class="dt">&quot;value&quot;</span><span class="fu">:</span> <span class="fl">24.1</span><span class="fu">,</span> <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-06-10T22:00:00Z&quot;</span><span class="fu">}</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;umidade&quot;</span><span class="fu">:</span>      <span class="ot">[</span><span class="fu">{</span><span class="dt">&quot;value&quot;</span><span class="fu">:</span> <span class="fl">53.0</span><span class="fu">,</span> <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-06-10T22:00:00Z&quot;</span><span class="fu">}</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;luminosidade&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="fu">{</span><span class="dt">&quot;value&quot;</span><span class="fu">:</span> <span class="dv">612</span><span class="fu">,</span>  <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-06-10T22:00:00Z&quot;</span><span class="fu">}</span><span class="ot">]</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p><strong>Status atual do servidor UFMA</strong> &gt;
+<code>200.137.134.98:443</code> — timeout no SSL handshake. &gt; O
+sistema local funciona; IC retoma automaticamente quando o servidor
+voltar.</p>
+<hr />
+<h2 id="status-atual">07 · STATUS ATUAL</h2>
+<h3 id="todos-os-componentes-locais-operacionais.">Todos os componentes
+locais operacionais.</h3>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 45%" />
+<col style="width: 27%" />
+</colgroup>
+<thead>
+<tr>
+<th>Componente</th>
+<th style="text-align: center;">Estado</th>
+<th>Detalhe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Simulador C++</td>
+<td style="text-align: center;">✅</td>
+<td>1 000 salas · publicação a cada 30 s</td>
+</tr>
+<tr>
+<td>Mosquitto</td>
+<td style="text-align: center;">✅</td>
+<td>TCP 1883 · WebSocket 9001 · healthy</td>
+</tr>
+<tr>
+<td>Bridge C++</td>
+<td style="text-align: center;">✅</td>
+<td>8 workers · modo degradado ativo</td>
+</tr>
+<tr>
+<td>Painel Web (Nginx)</td>
+<td style="text-align: center;">✅</td>
+<td>localhost:8080 · healthy</td>
+</tr>
+<tr>
+<td>InterSCity UFMA</td>
+<td style="text-align: center;">❌</td>
+<td>SSL handshake timeout — servidor UFMA fora do ar</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Integração InterSCity: correta — bloqueada por
+indisponibilidade externa.</strong></p>
+<hr />
+<h2 id="gantt-cronograma">08 · GANTT — CRONOGRAMA</h2>
+<h3 id="implementação-prevista-realizada-e-replanejada.">Implementação
+prevista, realizada e replanejada.</h3>
+<p><strong>Legenda:</strong> ✅ Concluído no prazo · 🔵 Concluído fora
+do prazo · 🟡 Previsto / em andamento · 🔴 Atrasado</p>
+<table>
+<colgroup>
+<col style="width: 6%" />
+<col style="width: 6%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr>
+<th>Atividade</th>
+<th>Prazo original</th>
+<th style="text-align: center;">Status</th>
+<th style="text-align: center;">28/05–31/05</th>
+<th style="text-align: center;">01/06–08/06</th>
+<th style="text-align: center;">09/06–12/06</th>
+<th style="text-align: center;">13/06–16/06</th>
+<th style="text-align: center;">17/06–20/06</th>
+<th style="text-align: center;">21/06–25/06</th>
+<th style="text-align: center;">26/06–30/06</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Docker + Mosquitto</td>
+<td>mai/26</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Simulador C++ MQTT</td>
+<td>mai/26</td>
+<td style="text-align: center;">🔵</td>
+<td style="text-align: center;">🔴</td>
+<td style="text-align: center;">🔵</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Node-RED automação</td>
+<td>mai/26</td>
+<td style="text-align: center;">🔵</td>
+<td style="text-align: center;">🔴</td>
+<td style="text-align: center;">🔵</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Painel web</td>
+<td>mai/26</td>
+<td style="text-align: center;">🔵</td>
+<td style="text-align: center;">🔴</td>
+<td style="text-align: center;">🔵</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Bridge InterSCity</td>
+<td>03/jun</td>
+<td style="text-align: center;">🔵</td>
+<td style="text-align: center;">🔴</td>
+<td style="text-align: center;">🔵</td>
+<td style="text-align: center;">🔵</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Validar IC remoto</td>
+<td>03/jun</td>
+<td style="text-align: center;">🔵</td>
+<td style="text-align: center;">🔴</td>
+<td style="text-align: center;">🔴</td>
+<td style="text-align: center;">🔵</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Painel escala 1 000 salas</td>
+<td>não previsto</td>
+<td style="text-align: center;">🔵</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">🔵</td>
+<td style="text-align: center;">🔵</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Roteiro de testes</td>
+<td>16/jun</td>
+<td style="text-align: center;">🟡</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">🟡</td>
+<td style="text-align: center;">🟡</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Evidências (prints/logs)</td>
+<td>20/jun</td>
+<td style="text-align: center;">🟡</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">🟡</td>
+<td style="text-align: center;">🟡</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>ESP32 / Wokwi</td>
+<td>01/jun</td>
+<td style="text-align: center;">🔴</td>
+<td style="text-align: center;">🔴</td>
+<td style="text-align: center;">🔴</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">🟡</td>
+<td style="text-align: center;">🟡</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Corrente / SCT-013 / IR</td>
+<td>08/jun</td>
+<td style="text-align: center;">🔴</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">🔴</td>
+<td style="text-align: center;">🔴</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">🟡</td>
+<td style="text-align: center;">🟡</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Testes finais C1–C5</td>
+<td>21/jun</td>
+<td style="text-align: center;">🟡</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">🟡</td>
+<td style="text-align: center;">🟡</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Documentação final</td>
+<td>25/jun</td>
+<td style="text-align: center;">🟡</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">🟡</td>
+<td style="text-align: center;">🟡</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Resumo:</strong> base de software entregue (fora do prazo
+original) · hardware físico replanejado · testes e documentação em
+curso</p>
+<hr />
+<h2 id="próximos-passos">09 · PRÓXIMOS PASSOS</h2>
+<h3 id="para-fechar-a-demonstração-validada.">Para fechar a demonstração
+validada.</h3>
+<p><strong>1. Validar integração InterSCity</strong> Aguardar
+restabelecimento do servidor UFMA · confirmar telemetria no Data
+Collector</p>
+<p><strong>2. Testar escala</strong> Validar estabilidade com 1 000
+salas · medir consumo de mensagens e latência bridge → IC</p>
+<p><strong>3. Evidenciar regras de automação</strong> Registrar ciclos
+completos: presença → AC liga → ausência → AC desliga</p>
+<p><strong>4. Fechar entrega</strong> Roteiro de testes · prints · logs
+do bridge com <code>[OK] telemetria enviada</code> · documentação
+final</p>
+<hr />
+<blockquote>
+<p><strong>Sistema já demonstra o fluxo completo com 1 000 salas e dados
+automáticos.</strong> O fechamento depende da recuperação do IC UFMA,
+testes de escala e evidências finais.</p>
+</blockquote>
+</body>
+</html>
