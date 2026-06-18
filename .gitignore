@@ -24,6 +24,7 @@ sdkconfig.old
 # Python
 __pycache__/
 *.pyc
+.codex_docx_deps/
 
 # Node-RED
 node-red/data/
