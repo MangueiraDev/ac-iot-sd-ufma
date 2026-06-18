@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Evidencias Operacionais AC-IoT</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 34px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: #d9e8ff;
+      background: #071018;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-family: Arial, sans-serif;
+      font-size: 28px;
+      color: #fff;
+    }
+    .subtitle {
+      margin-bottom: 24px;
+      font-family: Arial, sans-serif;
+      color: #9eb2c8;
+      font-size: 15px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    .panel {
+      border: 1px solid #25445d;
+      background: #0d1924;
+      border-radius: 8px;
+      overflow: hidden;
+      min-height: 265px;
+    }
+    .panel.full { grid-column: 1 / -1; }
+    .label {
+      padding: 12px 14px;
+      font-family: Arial, sans-serif;
+      font-weight: 700;
+      color: #ffffff;
+      background: #10263a;
+      border-bottom: 1px solid #25445d;
+    }
+    pre {
+      margin: 0;
+      padding: 14px;
+      white-space: pre-wrap;
+      line-height: 1.45;
+      font-size: 13px;
+    }
+    .ok { color: #54d88f; }
+    .warn { color: #ffd166; }
+    .blue { color: #54a8ff; }
+  </style>
+</head>
+<body>
+  <h1>AC-IoT UFMA - Evidencias Operacionais</h1>
+  <div class="subtitle">Capturas obtidas em 17/06/2026 com Docker Compose local, 1.000 salas simuladas, MQTT, Node-RED, Web e bridge InterSCity ativos.</div>
+
+  <div class="grid">
+    <section class="panel full">
+      <div class="label">docker compose ps -a</div>
+      <pre>NAME                         SERVICE     STATUS                        PORTS
+ac-iot-sd-ufma-bridge-1      bridge      <span class="ok">Up</span>
+ac-iot-sd-ufma-mosquitto-1   mosquitto   <span class="ok">Up (healthy)</span>   0.0.0.0:1883-&gt;1883, 0.0.0.0:9001-&gt;9001
+ac-iot-sd-ufma-nodered-1     nodered     <span class="ok">Up (healthy)</span>   0.0.0.0:1880-&gt;1880
+ac-iot-sd-ufma-simulator-1   simulator   <span class="ok">Up</span>
+ac-iot-sd-ufma-web-1         web         <span class="ok">Up (healthy)</span>   0.0.0.0:8080-&gt;80</pre>
+    </section>
+
+    <section class="panel">
+      <div class="label">Amostra MQTT - ac-iot/+/sensores</div>
+      <pre>{"id_sala":"sala01","temperatura":26.62,"umidade":53.55,
+ "luminosidade":262,"presenca":false,
+ "status_ac":"desligado","status_luz":"desligado"}
+
+{"id_sala":"sala0101","temperatura":25.52,"umidade":54.4,
+ "luminosidade":612,"presenca":true,
+ "status_ac":"ligado","status_luz":"ligado"}</pre>
+    </section>
+
+    <section class="panel">
+      <div class="label">Bridge metrics - ac-iot/system/bridge_metrics</div>
+      <pre>{"last_ok":<span class="ok">true</span>,"last_status":<span class="ok">201</span>,
+ "workers":8,"max_rps":20,"queue_max":20000,
+ "sent":483,"failed":0,"dropped":0,
+ "sent_per_sec":20.49,
+ "latency_ms_avg":255,"latency_ms_max":1325}</pre>
+    </section>
+
+    <section class="panel full">
+      <div class="label">Log da bridge MQTT -> InterSCity</div>
+      <pre>[INFO] Pipeline InterSCity: workers=8 queue_max=20000 max_rps=20 coalesce=latest-per-resource
+[OK] Worker #7 telemetria enviada: 00000000-0000-4000-8000-000000000101 total=1 coalesced=41
+[OK] Worker #6 telemetria enviada: 00000000-0000-4000-8000-000000000298 total=100 coalesced=41
+[OK] Worker #5 telemetria enviada: 00000000-0000-4000-8000-000000000398 total=200 coalesced=41
+[OK] Worker #0 telemetria enviada: 00000000-0000-4000-8000-000000000596 total=400 coalesced=41</pre>
+    </section>
+  </div>
+</body>
+</html>

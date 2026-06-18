@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Relatório Técnico Final - Gestão Energética dos Ar-Condicionados via IoT e InterSCity</title>
+  <style>
+    @page { size: A4; margin: 20mm 18mm 18mm; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: #172033;
+      background: #f5f7fb;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 11.5pt;
+      line-height: 1.48;
+    }
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto 16px;
+      padding: 24mm 20mm;
+      background: #fff;
+      box-shadow: 0 6px 24px rgba(24, 42, 72, .12);
+    }
+    .cover {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-align: center;
+    }
+    .institution { font-weight: 700; text-transform: uppercase; letter-spacing: .02em; }
+    .course { margin-top: 8px; font-weight: 700; }
+    .title {
+      margin: 46mm 0 12mm;
+      font-size: 20pt;
+      line-height: 1.15;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #102039;
+    }
+    .subtitle { font-size: 14pt; color: #31445f; }
+    .team {
+      margin: 22mm auto 0;
+      width: 120mm;
+      text-align: left;
+      line-height: 1.8;
+    }
+    .place { margin-top: 28mm; }
+    h1, h2, h3 { color: #102039; line-height: 1.2; }
+    h1 { margin: 0 0 10mm; font-size: 20pt; text-align: center; text-transform: uppercase; }
+    h2 {
+      margin: 10mm 0 4mm;
+      padding-bottom: 2mm;
+      font-size: 15pt;
+      border-bottom: 1.5px solid #d7dfeb;
+    }
+    h3 { margin: 7mm 0 2mm; font-size: 12.5pt; }
+    p { margin: 0 0 4mm; text-align: justify; }
+    ul, ol { margin: 0 0 4mm 7mm; padding: 0; }
+    li { margin: 1.5mm 0; }
+    .toc {
+      width: 100%;
+      margin-top: 4mm;
+      border-collapse: collapse;
+      font-size: 11pt;
+    }
+    .toc td {
+      border: 0;
+      padding: 2.2mm 0;
+      background: transparent;
+    }
+    .toc td:first-child {
+      border-bottom: 1px dotted #9aa8bb;
+    }
+    .toc td:last-child {
+      width: 16mm;
+      text-align: right;
+      border-bottom: 1px dotted #9aa8bb;
+    }
+    .toc a { color: inherit; text-decoration: none; }
+    .abstract {
+      padding: 6mm;
+      border-left: 4px solid #1f6feb;
+      background: #f1f6ff;
+    }
+    .keywords { margin-top: 4mm; font-weight: 700; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 4mm 0 6mm;
+      font-size: 10pt;
+    }
+    th, td { padding: 2.2mm 2.5mm; border: 1px solid #d7dfeb; vertical-align: top; }
+    th { background: #eaf1fb; text-align: left; }
+    .figure {
+      margin: 6mm 0;
+      break-inside: avoid;
+    }
+    .figure img, .figure svg {
+      display: block;
+      width: 100%;
+      border: 1px solid #d7dfeb;
+      border-radius: 4px;
+      background: #fff;
+    }
+    .caption {
+      margin-top: 2mm;
+      color: #51627a;
+      font-size: 9.5pt;
+      text-align: center;
+    }
+    pre {
+      margin: 4mm 0 6mm;
+      padding: 4mm;
+      overflow: hidden;
+      color: #eaf2ff;
+      background: #0b1220;
+      border-radius: 4px;
+      font-size: 8.5pt;
+      line-height: 1.38;
+      white-space: pre-wrap;
+    }
+    code { font-family: Menlo, Consolas, monospace; }
+    .note {
+      padding: 4mm;
+      margin: 4mm 0;
+      border-left: 4px solid #d97706;
+      background: #fff7ed;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5mm;
+    }
+    .card {
+      padding: 4mm;
+      border: 1px solid #d7dfeb;
+      border-radius: 4px;
+      background: #fbfdff;
+    }
+    .small { font-size: 9.5pt; color: #51627a; }
+    .break { break-before: page; }
+    @media print {
+      body { background: #fff; }
+      .page { width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; break-after: auto; }
+      .cover {
+        min-height: calc(297mm - 38mm);
+        break-after: page;
+      }
+      .toc-heading, #referencias { break-before: page; }
+    }
+  </style>
+</head>
+<body>
+  <section class="page cover">
+    <div>
+      <div class="institution">Universidade Federal do Maranhão - UFMA</div>
+      <div>Curso de Engenharia da Computação</div>
+      <div class="course">Disciplina de Sistemas Distribuídos</div>
+    </div>
+    <div>
+      <div class="title">Relatório Técnico Final<br>Gestão Energética dos Ar-Condicionados das Salas de Aula do Prédio Paulo Freire via IoT</div>
+      <div class="subtitle">Sistema distribuído de monitoramento, automação e integração InterSCity para ambientes acadêmicos climatizados da UFMA</div>
+      <div class="team">
+        <strong>Equipe:</strong><br>
+        Cleila Monteiro<br>
+        Guilherme de Aquino<br>
+        Nilton Mangueira<br>
+        Raniere Mendes<br>
+        Tereza Clarice<br><br>
+        <strong>Professor:</strong> Prof. Dr. Luiz Henrique Neves Rodrigues
+      </div>
+    </div>
+    <div class="place">São Luís - MA<br>2026</div>
+  </section>
+
+  <section class="page">
+    <h2>Resumo</h2>
+    <div class="abstract">
+      <p>Este relatório técnico-científico documenta a concepção, a implementação e a avaliação experimental do projeto <strong>Gestão Energética dos Ar-Condicionados das Salas de Aula do Prédio Paulo Freire via IoT</strong>, doravante denominado AC-IoT UFMA, desenvolvido no âmbito da disciplina de Sistemas Distribuídos da Engenharia da Computação da UFMA. O Termo de Abertura do Projeto definiu como problema central a ausência de monitoramento e automação dos aparelhos de ar-condicionado em salas de aula, cenário que favorece desperdício energético em períodos de baixa ou nenhuma ocupação. A versão final do sistema preserva esse propósito e o atualiza tecnicamente por meio de uma arquitetura distribuída composta por simulação IoT em C++17, broker MQTT Mosquitto, fluxos Node-RED, painel web operacional, dashboard de métricas e bridge C++ para integração com a plataforma InterSCity UFMA via serviços REST. A solução foi projetada segundo princípios de baixo acoplamento, orientação a eventos, observabilidade, controle de carga e tolerância parcial a falhas, aspectos recorrentes em sistemas IoT e plataformas de cidades inteligentes (FAHMIDEH; ZOWGHI, 2020; TEJASVI et al., 2020). A avaliação local considerou 1.000 salas simuladas, 40 blocos operacionais, comunicação MQTT em tempo real, Node-RED ativo, painel web responsivo e bridge com 8 workers HTTP, fila coalescente, limite de 20 requisições por segundo e envio aceito pelo InterSCity com status HTTP 201. Os resultados indicam que o sistema final atende ao objetivo de demonstrar uma solução distribuída para gestão energética e operacional de ambientes climatizados, ainda que a etapa de hardware físico tenha permanecido simulada e a fila da bridge não possua persistência durável.</p>
+      <div class="keywords">Palavras-chave: sistemas distribuídos; Internet das Coisas; MQTT; InterSCity; automação predial; observabilidade; cidades inteligentes.</div>
+    </div>
+
+    <h2 class="toc-heading">Sumário</h2>
+    <table class="toc">
+      <tr><td><a href="#intro">1 Introdução</a></td><td>3</td></tr>
+      <tr><td><a href="#fundamentacao">2 Fundamentação técnico-científica</a></td><td>5</td></tr>
+      <tr><td><a href="#metodologia">3 Metodologia de desenvolvimento e avaliação</a></td><td>7</td></tr>
+      <tr><td><a href="#arquitetura">4 Arquitetura do sistema distribuído</a></td><td>9</td></tr>
+      <tr><td><a href="#implementacao">5 Implementação e decisões de projeto</a></td><td>11</td></tr>
+      <tr><td><a href="#intercity">6 Comunicação e monitoramento via InterSCity</a></td><td>16</td></tr>
+      <tr><td><a href="#testes">7 Testes, resultados e discussão</a></td><td>18</td></tr>
+      <tr><td><a href="#conclusao">8 Conclusão</a></td><td>23</td></tr>
+      <tr><td><a href="#referencias">Referências</a></td><td>24</td></tr>
+    </table>
+  </section>
+
+  <section class="page">
+    <h2 id="intro">1. Introdução</h2>
+    <p>Ambientes acadêmicos com múltiplas salas climatizadas constituem um domínio apropriado para aplicação de Sistemas Distribuídos, pois combinam sensores, atuadores, comunicação em rede, processamento contínuo de eventos e tomada de decisão operacional. Em edifícios inteligentes, funções como climatização, iluminação, segurança e conforto passam a depender de uma infraestrutura computacional heterogênea e conectada, o que amplia tanto o potencial de automação quanto os riscos de falhas, inconsistências e baixa observabilidade (CIHOLAS et al., 2019). No caso específico de sistemas HVAC, a literatura destaca que conforto térmico e eficiência energética são objetivos concorrentes, exigindo mecanismos de controle capazes de reagir a ocupação, temperatura, umidade e condições ambientais (MERABET et al., 2021).</p>
+    <p>No contexto da Universidade Federal do Maranhão, o problema operacional abordado foi inicialmente delimitado no Termo de Abertura do Projeto como a gestão energética dos ar-condicionados das salas de aula do Prédio Paulo Freire. O TAP destacou que a edificação possui intensa rotatividade de uso ao longo do dia letivo e que o clima de São Luís, marcado por temperaturas elevadas e alta umidade durante praticamente todo o ano, torna o uso de climatização uma necessidade cotidiana. Nesse cenário, o controle manual dos aparelhos cria risco recorrente de desperdício: salas vazias podem permanecer climatizadas entre aulas, antes do início das atividades ou após o encerramento do expediente.</p>
+    <p>A versão final do projeto manteve essa justificativa e ampliou sua implementação para uma infraestrutura distribuída de monitoramento, automação e integração externa. O problema deixa de ser apenas “ligar ou desligar ar-condicionado” e passa a envolver visibilidade operacional sobre presença, temperatura, umidade, luminosidade, estado do ar-condicionado, estado da iluminação, comandos, heartbeat de salas e status de comunicação com InterSCity. Sem uma camada distribuída de monitoramento, o operador não dispõe de indicadores suficientes para identificar ambientes críticos, validar o funcionamento da automação ou verificar se os dados estão sendo persistidos em uma plataforma urbana interoperável.</p>
+    <p>O AC-IoT UFMA foi concebido, portanto, como um sistema distribuído orientado a eventos. A adoção de MQTT é coerente com aplicações IoT por sua comunicação publish/subscribe, adequada a dispositivos e serviços desacoplados em cenários de telemetria contínua (HINDY et al., 2020). A integração com InterSCity se justifica porque plataformas de cidades inteligentes devem oferecer mecanismos de interoperabilidade, catálogo de recursos, coleta de dados e suporte à composição de aplicações urbanas (FAHMIDEH; ZOWGHI, 2020). A presença de Node-RED no projeto complementa a arquitetura ao permitir modelagem visual de fluxos e regras de automação, abordagem frequentemente explorada para reduzir a complexidade de composição em sistemas IoT (DIAS; RESTIVO; FERREIRA, 2021).</p>
+    <h3>1.1 Objetivos atualizados conforme o sistema final</h3>
+    <p>O objetivo geral atualizado é <strong>desenvolver e validar, em ambiente simulado e containerizado, um sistema distribuído de gestão energética e operacional dos ar-condicionados das salas de aula do Prédio Paulo Freire da UFMA, integrando telemetria IoT simulada, comunicação MQTT, automação por Node-RED, painel web em tempo real e publicação/consulta de dados na plataforma InterSCity UFMA</strong>.</p>
+    <p>Os objetivos específicos da versão final foram ajustados em relação ao TAP inicial para refletir as decisões efetivamente implementadas no sistema:</p>
+    <table>
+      <tr><th>Código</th><th>Objetivo específico atualizado</th><th>Situação no sistema final</th></tr>
+      <tr><td>OE1</td><td>Configurar ambiente local containerizado com Mosquitto, simulador, bridge, web e Node-RED.</td><td>Atendido com Docker Compose.</td></tr>
+      <tr><td>OE2</td><td>Simular sensores e atuadores das salas com telemetria de temperatura, umidade, luminosidade, presença, estado do AC, estado da luz e setpoints.</td><td>Atendido por simulador C++17.</td></tr>
+      <tr><td>OE3</td><td>Implementar comunicação publish/subscribe por MQTT para desacoplar produtores, consumidores, automação e bridge.</td><td>Atendido com tópicos `ac-iot/+/sensores`, comandos por sala e métricas da bridge.</td></tr>
+      <tr><td>OE4</td><td>Implementar automação de conforto térmico e ocupação, considerando presença, ausência, setpoints e atrasos de acionamento.</td><td>Atendido no simulador e complementado por fluxo Node-RED.</td></tr>
+      <tr><td>OE5</td><td>Integrar o sistema à plataforma InterSCity UFMA por meio de registro de resources/capabilities e envio de telemetria ao Adaptor.</td><td>Atendido pela bridge C++ com libcurl.</td></tr>
+      <tr><td>OE6</td><td>Construir painel web operacional para visualização em tempo real, comando em massa e consulta ao InterSCity.</td><td>Atendido com Nginx, HTML, CSS e JavaScript.</td></tr>
+      <tr><td>OE7</td><td>Disponibilizar dashboard de métricas para observar processamento MQTT, tráfego, latência, fila, sucesso/falha da bridge e estado InterSCity.</td><td>Atendido em `dashboard.html`.</td></tr>
+      <tr><td>OE8</td><td>Validar o fluxo completo em escala simulada, com 1.000 salas e evidências de execução local.</td><td>Atendido por capturas, logs, amostras MQTT e métricas HTTP 201.</td></tr>
+    </table>
+
+    <h3>1.2 Escopo</h3>
+    <p>O sistema implementado cobre a simulação de sensores, automação de presença/conforto, comunicação MQTT, painel web em tempo real, fluxos Node-RED, bridge para InterSCity e evidências de execução em Docker Compose. Em relação ao TAP inicial, houve substituição da simulação Wokwi/ESP32 e do dashboard Streamlit por um simulador C++17 escalável e por uma interface web operacional servida por Nginx. Essa mudança não altera a finalidade do projeto; ela atualiza a solução para validar melhor propriedades de Sistemas Distribuídos, como escala, concorrência, desacoplamento, observabilidade e controle de carga. Hardware físico como ESP32, sensor de corrente, emissor infravermelho e relé permaneceu delimitado como extensão futura, pois o foco final foi validar comportamento distribuído de software e integração de dados.</p>
+
+    <h2 id="fundamentacao">2. Fundamentação técnico-científica</h2>
+    <p>Sistemas distribuídos são caracterizados pela cooperação entre componentes computacionais autônomos conectados em rede, nos quais a percepção do usuário deve ser a de um serviço coerente, apesar da existência de múltiplos processos, atrasos de comunicação e falhas parciais. Em aplicações IoT, essa característica é intensificada pela presença de sensores, atuadores, gateways, serviços de borda, brokers de mensagem e plataformas de armazenamento/consulta. A literatura sobre arquiteturas IoT para cidades inteligentes reforça que tais sistemas precisam lidar simultaneamente com interoperabilidade, escalabilidade, heterogeneidade, processamento de dados e integração com aplicações externas (FAHMIDEH; ZOWGHI, 2020).</p>
+    <p>O padrão publish/subscribe adotado pelo MQTT é apropriado para esse cenário porque separa produtores e consumidores de mensagens: o simulador publica telemetria sem conhecer painel, Node-RED ou bridge; esses consumidores, por sua vez, assinam tópicos conforme sua responsabilidade. Essa separação reduz acoplamento temporal e espacial, facilita a adição de novos consumidores e favorece expansão incremental do sistema. Em estudos recentes sobre segurança e detecção em redes MQTT, Hindy et al. (2020) descrevem o protocolo como uma tecnologia recorrente de comunicação máquina-a-máquina em IoT, justamente pela leveza e pelo modelo orientado a mensagens.</p>
+    <p>A integração com uma plataforma urbana, por sua vez, aproxima o protótipo do conceito de middleware de cidade inteligente. Tejasvi et al. (2020) argumentam que middlewares IoT para cidades inteligentes precisam lidar com alto volume de dispositivos, escalabilidade horizontal e aumento de disponibilidade/throughput. Embora o AC-IoT seja um protótipo acadêmico, decisões como fila assíncrona, pool de workers HTTP, controle de taxa, coalescência por recurso e publicação de métricas internas foram adotadas para reproduzir desafios reais desse tipo de middleware.</p>
+    <p>No domínio de automação predial, o acionamento de HVAC não pode ser analisado apenas como comando remoto. Merabet et al. (2021) mostram que controle de edifícios envolve compromisso entre conforto térmico e eficiência energética, sendo necessário observar ocupação, condições ambientais e comportamento do sistema. Por isso, o simulador implementa presença, temperatura, umidade, luminosidade, setpoints, temporizadores e estados de atuadores, permitindo avaliar regras operacionais sem depender de hardware físico na fase de validação distribuída.</p>
+    <table>
+      <tr><th>Conceito</th><th>Aplicação no projeto</th></tr>
+      <tr><td>Middleware de mensagens</td><td>Mosquitto com MQTT TCP 1883 e WebSocket 9001.</td></tr>
+      <tr><td>Arquitetura orientada a eventos</td><td>Telemetrias e comandos trafegam por tópicos MQTT.</td></tr>
+      <tr><td>Desacoplamento</td><td>Simulador, painel, Node-RED e bridge não dependem de chamadas diretas entre si.</td></tr>
+      <tr><td>Tolerância a falhas</td><td>Bridge continua operando se o InterSCity oscilar e aplica retry/rate limit.</td></tr>
+      <tr><td>Observabilidade</td><td>Métricas da bridge são publicadas em `ac-iot/system/bridge_metrics` e consumidas pelo dashboard.</td></tr>
+    </table>
+  </section>
+
+  <section class="page">
+    <h2 id="metodologia">3. Metodologia de desenvolvimento e avaliação</h2>
+    <p>O desenvolvimento foi conduzido por prototipação incremental, com validação contínua de comunicação, integração e operação. Essa estratégia é adequada para sistemas distribuídos porque permite isolar falhas por componente, testar contratos de mensagem, observar o comportamento da fila e verificar a integração externa antes da consolidação do relatório. A metodologia também considerou que plataformas IoT e de cidades inteligentes tendem a evoluir por composição de serviços heterogêneos, exigindo decisões explícitas sobre interoperabilidade, escalabilidade e observabilidade (FAHMIDEH; ZOWGHI, 2020; TEJASVI et al., 2020).</p>
+    <p>O TAP apresentou como fluxo inicial Wokwi -> MQTT -> Node-RED -> InterSCity -> Dashboard Streamlit. Durante a execução, esse fluxo foi atualizado para simulador C++ -> Mosquitto -> Node-RED/Web/Bridge -> InterSCity -> Dashboard web. A mudança foi uma decisão de engenharia para permitir maior escala simulada, melhor controle sobre telemetria, captura de métricas internas da bridge e validação mais direta das propriedades distribuídas exigidas pela disciplina.</p>
+    <p>Inicialmente, definiu-se o modelo de domínio: cada sala possui identificador, UUID InterSCity, localização geográfica, capabilities de sensores e capabilities de atuadores. Em seguida, implementou-se o simulador C++ para gerar telemetria ambiental e estados de automação. A terceira etapa introduziu o broker MQTT e os tópicos de comunicação. A quarta etapa implementou a interface web operacional e os fluxos Node-RED. Por fim, a bridge InterSCity foi incorporada como componente de tradução entre telemetria MQTT e chamadas REST para Cataloguer, Adaptor e Collector.</p>
+    <ol>
+      <li>Modelagem de salas e capabilities compatíveis com InterSCity.</li>
+      <li>Implementação do simulador com sensores virtuais, setpoints e regras de automação.</li>
+      <li>Configuração do broker MQTT e tópicos de telemetria/comando.</li>
+      <li>Construção do painel web para operação em 1.000 salas.</li>
+      <li>Implementação da bridge MQTT para InterSCity com fila assíncrona e pool HTTP.</li>
+      <li>Containerização com Docker Compose e preparação de manifests Kubernetes.</li>
+      <li>Validação com capturas, logs, métricas e consulta ao InterSCity.</li>
+    </ol>
+    <p>A avaliação considerou critérios observáveis: disponibilidade dos containers, recepção de mensagens MQTT, atualização do painel em tempo real, execução de fluxos Node-RED, envio de telemetria para InterSCity, último status HTTP da bridge, tamanho de fila, taxa de envio e ausência de perdas por descarte no período amostrado. Esses critérios foram escolhidos porque cobrem tanto a dimensão funcional quanto propriedades não funcionais relevantes em sistemas distribuídos, como responsividade, tolerância a falhas externas e rastreabilidade operacional.</p>
+    <p>A Figura 1 sintetiza essa metodologia como um ciclo de engenharia. O diagrama explicita que a modelagem de domínio antecede a simulação, que a simulação alimenta a integração MQTT/Web/Node-RED e que a integração InterSCity é validada por evidências operacionais. A seta de retorno indica o caráter iterativo do desenvolvimento: falhas ou limitações identificadas na validação realimentam ajustes no modelo, no simulador e na bridge.</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 1000 360" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#2563eb"/>
+          </marker>
+        </defs>
+        <rect width="1000" height="360" fill="#f8fbff"/>
+        <text x="40" y="42" font-family="Arial" font-size="24" font-weight="700" fill="#102039">Ciclo metodológico do projeto</text>
+        <g font-family="Arial" font-size="16" fill="#102039">
+          <rect x="55" y="95" width="170" height="82" rx="6" fill="#dbeafe" stroke="#2563eb"/>
+          <text x="82" y="128" font-weight="700">1. Modelagem</text>
+          <text x="83" y="153" font-size="13">salas, UUIDs e capabilities</text>
+          <rect x="300" y="95" width="170" height="82" rx="6" fill="#dcfce7" stroke="#16a34a"/>
+          <text x="333" y="128" font-weight="700">2. Simulação</text>
+          <text x="326" y="153" font-size="13">sensores e automação</text>
+          <rect x="545" y="95" width="170" height="82" rx="6" fill="#fef3c7" stroke="#d97706"/>
+          <text x="584" y="128" font-weight="700">3. Integração</text>
+          <text x="574" y="153" font-size="13">MQTT, Node-RED e Web</text>
+          <rect x="790" y="95" width="170" height="82" rx="6" fill="#ede9fe" stroke="#7c3aed"/>
+          <text x="822" y="128" font-weight="700">4. InterSCity</text>
+          <text x="818" y="153" font-size="13">catalog, adaptor, collector</text>
+          <rect x="300" y="235" width="415" height="70" rx="6" fill="#fee2e2" stroke="#dc2626"/>
+          <text x="385" y="265" font-weight="700">5. Validação e documentação final</text>
+          <text x="370" y="289" font-size="13">evidências, métricas, limitações e resultados</text>
+        </g>
+        <line x1="225" y1="136" x2="295" y2="136" stroke="#2563eb" stroke-width="3" marker-end="url(#arrow)"/>
+        <line x1="470" y1="136" x2="540" y2="136" stroke="#2563eb" stroke-width="3" marker-end="url(#arrow)"/>
+        <line x1="715" y1="136" x2="785" y2="136" stroke="#2563eb" stroke-width="3" marker-end="url(#arrow)"/>
+        <path d="M875 177 C875 245, 735 270, 722 270" fill="none" stroke="#2563eb" stroke-width="3" marker-end="url(#arrow)"/>
+        <path d="M300 270 C160 270, 140 208, 140 180" fill="none" stroke="#2563eb" stroke-width="3" marker-end="url(#arrow)"/>
+      </svg>
+      <div class="caption">Figura 1 - Ciclo metodológico de concepção, integração, validação e documentação do AC-IoT UFMA.</div>
+    </div>
+  </section>
+
+  <section class="page">
+    <h2 id="arquitetura">4. Arquitetura do sistema distribuído</h2>
+    <p>A arquitetura do AC-IoT UFMA foi organizada em serviços independentes executados em containers, com comunicação majoritariamente assíncrona. Essa decomposição evita que um único processo concentre simulação, controle, visualização e integração externa. Em termos arquiteturais, o broker MQTT funciona como barramento lógico de eventos, o simulador atua como produtor de telemetria, o painel e o Node-RED atuam como consumidores/operadores, e a bridge atua como adaptador de protocolo entre o domínio MQTT e o domínio REST do InterSCity.</p>
+    <p>Essa decisão reduz o acoplamento entre componentes e facilita a substituição futura de partes do sistema. Por exemplo, sensores físicos podem substituir o simulador sem alterar o painel, desde que preservem o contrato de mensagem; EMQX pode substituir Mosquitto em uma implantação de larga escala; e a bridge pode ser replicada quando houver suporte a shared subscriptions. A literatura sobre microserviços e IoT em cidades inteligentes ressalta que escalabilidade e disponibilidade dependem de modularização, distribuição de carga e contratos de comunicação bem definidos (WASEEM; LIANG; SHAHIN, 2020; TEJASVI et al., 2020).</p>
+    <p>A Figura 2 descreve a topologia lógica do sistema. Observa-se que o simulador C++ publica leituras em `ac-iot/+/sensores`, o Mosquitto distribui essas mensagens para múltiplos consumidores, o painel web recebe dados por WebSocket, o Node-RED interpreta eventos para automação e a bridge C++ traduz a telemetria para requisições HTTPS destinadas ao InterSCity. O diagrama evidencia o desacoplamento entre produtores e consumidores, pois cada componente depende do contrato de mensagem, não de chamadas diretas entre processos.</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 1050 430" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#1f6feb"/>
+          </marker>
+        </defs>
+        <rect width="1050" height="430" fill="#f8fbff"/>
+        <text x="35" y="42" font-family="Arial" font-size="24" font-weight="700" fill="#102039">Topologia distribuída e fluxo de dados</text>
+        <g font-family="Arial" fill="#102039">
+          <rect x="50" y="95" width="180" height="92" rx="7" fill="#dbeafe" stroke="#2563eb"/>
+          <text x="94" y="128" font-size="17" font-weight="700">Simulador C++</text>
+          <text x="82" y="154" font-size="13">1.000 salas virtuais</text>
+          <text x="82" y="174" font-size="13">sensores + automação</text>
+
+          <rect x="310" y="95" width="180" height="92" rx="7" fill="#dcfce7" stroke="#16a34a"/>
+          <text x="358" y="128" font-size="17" font-weight="700">Mosquitto</text>
+          <text x="342" y="154" font-size="13">MQTT 1883</text>
+          <text x="342" y="174" font-size="13">WebSocket 9001</text>
+
+          <rect x="570" y="70" width="180" height="82" rx="7" fill="#fef3c7" stroke="#d97706"/>
+          <text x="623" y="103" font-size="17" font-weight="700">Painel Web</text>
+          <text x="608" y="128" font-size="13">Nginx + MQTT WS</text>
+
+          <rect x="570" y="190" width="180" height="82" rx="7" fill="#f3e8ff" stroke="#7c3aed"/>
+          <text x="622" y="223" font-size="17" font-weight="700">Node-RED</text>
+          <text x="607" y="248" font-size="13">fluxos de automação</text>
+
+          <rect x="570" y="310" width="180" height="82" rx="7" fill="#e0f2fe" stroke="#0284c7"/>
+          <text x="617" y="343" font-size="17" font-weight="700">Bridge C++</text>
+          <text x="604" y="368" font-size="13">fila + workers HTTP</text>
+
+          <rect x="840" y="220" width="170" height="115" rx="7" fill="#fff7ed" stroke="#ea580c"/>
+          <text x="879" y="254" font-size="17" font-weight="700">InterSCity</text>
+          <text x="877" y="281" font-size="13">Cataloguer</text>
+          <text x="877" y="303" font-size="13">Adaptor</text>
+          <text x="877" y="325" font-size="13">Collector</text>
+        </g>
+        <line x1="230" y1="141" x2="304" y2="141" stroke="#1f6feb" stroke-width="3" marker-end="url(#arr2)"/>
+        <line x1="490" y1="132" x2="565" y2="111" stroke="#1f6feb" stroke-width="3" marker-end="url(#arr2)"/>
+        <line x1="490" y1="152" x2="565" y2="225" stroke="#1f6feb" stroke-width="3" marker-end="url(#arr2)"/>
+        <line x1="490" y1="168" x2="565" y2="348" stroke="#1f6feb" stroke-width="3" marker-end="url(#arr2)"/>
+        <line x1="750" y1="351" x2="835" y2="280" stroke="#1f6feb" stroke-width="3" marker-end="url(#arr2)"/>
+        <text x="252" y="125" font-family="Arial" font-size="12" fill="#51627a">ac-iot/+/sensores</text>
+        <text x="765" y="326" font-family="Arial" font-size="12" fill="#51627a">HTTPS REST</text>
+      </svg>
+      <div class="caption">Figura 2 - Topologia lógica do sistema distribuído AC-IoT UFMA e fluxo de dados entre simulador, broker, consumidores e InterSCity.</div>
+    </div>
+
+    <table>
+      <tr><th>Componente</th><th>Responsabilidade</th><th>Tecnologia</th></tr>
+      <tr><td>Simulador</td><td>Gerar leituras de temperatura, umidade, luminosidade, presença e estados de atuadores.</td><td>C++17, libmosquitto, YAML</td></tr>
+      <tr><td>Broker MQTT</td><td>Distribuir telemetria e comandos entre serviços.</td><td>Eclipse Mosquitto</td></tr>
+      <tr><td>Web</td><td>Operar salas, visualizar KPIs, blocos e consultar InterSCity.</td><td>Nginx, HTML, CSS, JavaScript</td></tr>
+      <tr><td>Node-RED</td><td>Modelar automações em fluxo e depurar mensagens.</td><td>Node-RED</td></tr>
+      <tr><td>Bridge InterSCity</td><td>Registrar capabilities/recursos e enviar telemetria ao Adaptor.</td><td>C++17, libcurl, nlohmann/json</td></tr>
+    </table>
+  </section>
+
+  <section class="page">
+    <h2 id="implementacao">5. Implementação e decisões de projeto</h2>
+    <p>A implementação foi organizada para preservar separação de responsabilidades entre simulação, transporte de mensagens, automação, interface operacional e integração externa. Essa separação é relevante porque o comportamento de um sistema distribuído não depende apenas da correção local de cada módulo, mas também da forma como esses módulos se comunicam sob atraso, indisponibilidade parcial e variação de carga.</p>
+    <table>
+      <tr><th>Requisito de engenharia</th><th>Decisão adotada</th><th>Justificativa técnica</th></tr>
+      <tr><td>Baixo acoplamento entre componentes</td><td>Comunicação publish/subscribe por MQTT.</td><td>Permite que novos consumidores sejam adicionados sem modificar o simulador.</td></tr>
+      <tr><td>Operação em tempo real local</td><td>Painel web via MQTT sobre WebSocket.</td><td>Reduz latência perceptível e evita polling HTTP intensivo.</td></tr>
+      <tr><td>Integração com plataforma externa</td><td>Bridge MQTT -> REST InterSCity.</td><td>Traduz o modelo de eventos local para o modelo de recursos/capabilities da plataforma urbana.</td></tr>
+      <tr><td>Controle de sobrecarga</td><td>Fila com limite, coalescência e rate limit.</td><td>Evita bloqueio do callback MQTT e reduz envio de estados obsoletos.</td></tr>
+      <tr><td>Observabilidade</td><td>Métricas publicadas no tópico `ac-iot/system/bridge_metrics`.</td><td>Permite que o dashboard mostre saúde da integração sem depender de inspeção manual de logs.</td></tr>
+    </table>
+    <h3>5.1 Simulador e lógica de automação</h3>
+    <p>O simulador mantém estado por sala e atualiza sensores com variação controlada. A lógica considera presença, setpoint, atraso para ligar/desligar ar-condicionado, luminosidade e cenários críticos. A inclusão de temporizadores evita uma automação artificialmente instantânea e aproxima o comportamento do sistema de uma operação predial real, na qual presença e ausência precisam ser estabilizadas antes de acionar cargas. Esse cuidado dialoga com a literatura de controle predial, que aponta a necessidade de balancear conforto térmico e consumo energético (MERABET et al., 2021).</p>
+    <pre><code>// src/simulator/simulation.hpp
+if (s.modo_ac == "ativo") {
+    if (!s.presenca) {
+        s.presenca_desde = 0;
+        if (s.ausencia_desde && (now - s.ausencia_desde) >= DELAY_AC_DESLIGAR) {
+            s.status_ac  = "desligado";
+            s.status_luz = "desligado";
+        }
+    } else {
+        s.ausencia_desde = 0;
+        s.status_luz     = "ligado";
+        bool ac_ok = s.presenca_desde && (now - s.presenca_desde) >= DELAY_AC_LIGAR;
+        if (ac_ok) s.status_ac = "ligado";
+    }
+}</code></pre>
+
+    <h3>5.2 Pipeline assíncrono da bridge</h3>
+    <p>A bridge foi desenhada para não bloquear o callback MQTT com chamadas HTTP. O método `enqueue` filtra campos válidos, associa sala a UUID InterSCity, aplica coalescência por recurso e controla backpressure por tamanho máximo de fila. Essa decisão é essencial porque o InterSCity é uma dependência externa e, portanto, sujeita a latência, falhas transitórias e variação de disponibilidade. Em vez de transformar cada leitura MQTT em uma chamada síncrona, a bridge desacopla recepção e envio, preservando a responsividade do sistema local.</p>
+    <pre><code>// src/bridge/pipeline.hpp
+json filtered;
+for (const auto&amp; [k, v] : raw_payload.items())
+    if (TELEMETRY_FIELDS.count(k) &amp;&amp; !v.is_null())
+        filtered[k] = v;
+
+auto pending = pending_payloads_.find(uuid);
+if (pending != pending_payloads_.end()) {
+    pending-&gt;second = std::move(filtered);
+    coalesced_++;
+    return;
+}
+
+if (pending_order_.size() &gt;= queue_max_) {
+    dropped_++;
+    return;
+}</code></pre>
+
+    <h3>5.3 Envio para InterSCity</h3>
+    <p>O cliente REST monta o payload no formato esperado pelo Adaptor, encapsulando cada capability em uma lista de valores com timestamp ISO 8601 UTC. A rotina executa até três tentativas em falhas de servidor e evita retry em erros de cliente. Essa política diferencia falhas potencialmente transitórias, como indisponibilidade temporária da API, de erros que indicam problema de contrato ou payload. Em sistemas distribuídos, essa distinção é importante para evitar sobrecarga adicional sobre um serviço que já está degradado.</p>
+    <pre><code>// src/bridge/interscity.hpp
+json payload{{"data", json::object()}};
+for (const auto&amp; [key, val] : data.items()) {
+    if (!val.is_null())
+        payload["data"][key] = json::array({{{"value", val}, {"timestamp", ts}}});
+}
+
+for (int attempt = 1; attempt &lt;= 3; ++attempt) {
+    auto r = post(adaptor_ + "/resources/" + uuid + "/data", payload);
+    if (r.status &gt;= 200 &amp;&amp; r.status &lt; 300) { result.ok = true; break; }
+    if (r.status != 0 &amp;&amp; r.status &lt; 500) break;
+    std::this_thread::sleep_for(std::chrono::seconds(attempt * 2));
+}</code></pre>
+  </section>
+
+  <section class="page">
+    <h3>5.4 Painel web e observabilidade</h3>
+    <p>O painel web implementa um cliente MQTT via WebSocket, atualiza KPIs, blocos operacionais, tabela de telemetria e estado InterSCity. As métricas internas da bridge são consumidas pelo tópico `ac-iot/system/bridge_metrics`, tornando visíveis taxa de envio, fila, falhas, bytes trafegados, latência e último status HTTP.</p>
+    <pre><code>// src/web/static/app.js
+function handleBridgeMetrics(data) {
+  lastBridgeMetrics = data;
+  const sent = Number(data.sent || 0);
+  const queue = Number(data.queue_size || 0);
+  if (data.last_ok) {
+    setICStatus(true, sent ? `InterSCity via bridge · ${sent}` : `InterSCity via bridge · fila ${queue}`);
+  } else if (sent || Number(data.total_attempted || 0)) {
+    icEverOk = sent &gt; 0;
+    setICStatus(false, `InterSCity instavel · fila ${queue}`);
+  }
+}</code></pre>
+
+    <h3>5.5 Infraestrutura local</h3>
+    <p>A execução local usa Docker Compose com cinco serviços principais: Mosquitto, simulador, bridge, web e Node-RED. O Compose define portas, volumes, variáveis de ambiente e healthchecks. A configuração `ROOM_COUNT=1000` habilita o cenário de larga escala no simulador e na bridge.</p>
+    <p>A Figura 3 apresenta as evidências operacionais coletadas durante a execução local. O bloco superior confirma os containers ativos e saudáveis; a amostra MQTT comprova que a telemetria contém grandezas ambientais e estados de atuadores; as métricas da bridge demonstram envio aceito pelo InterSCity com HTTP 201, 8 workers e controle de taxa; e os logs mostram a progressão dos envios por UUID. Assim, a figura não é apenas ilustrativa: ela documenta a validação ponta a ponta da infraestrutura.</p>
+
+    <table>
+      <tr><th>Serviço</th><th>Porta</th><th>Observação</th></tr>
+      <tr><td>mosquitto</td><td>1883, 9001</td><td>MQTT TCP e WebSocket.</td></tr>
+      <tr><td>simulator</td><td>-</td><td>Publica telemetria a cada 30 segundos.</td></tr>
+      <tr><td>bridge</td><td>-</td><td>Envia dados ao InterSCity com 8 workers e limite de 20 req/s.</td></tr>
+      <tr><td>web</td><td>8080</td><td>Painel operacional e dashboard de métricas.</td></tr>
+      <tr><td>nodered</td><td>1880</td><td>Fluxos de automação e depuração.</td></tr>
+    </table>
+
+    <div class="figure">
+      <img src="assets/relatorio-final/evidencias-operacionais.png" alt="Evidências operacionais Docker, MQTT e Bridge">
+      <div class="caption">Figura 3 - Evidências operacionais da execução local: containers Docker, amostra MQTT, métricas da bridge e logs de envio ao InterSCity.</div>
+    </div>
+  </section>
+
+  <section class="page">
+    <h2 id="intercity">6. Comunicação e Monitoramento via InterSCity</h2>
+    <p>A comunicação com o InterSCity é um dos pontos centrais do projeto, pois transforma o protótipo local em produtor de dados interoperáveis para uma plataforma urbana. Na arquitetura adotada, cada sala é modelada como recurso, enquanto temperatura, umidade, luminosidade, presença, estado do ar-condicionado, estado da luz e setpoints são tratados como capabilities. Esse modelo segue a lógica de plataformas de cidades inteligentes, nas quais recursos físicos ou virtuais precisam ser catalogados, consultados e reutilizados por aplicações distintas (FAHMIDEH; ZOWGHI, 2020).</p>
+    <p>A bridge executa três papéis técnicos. Primeiro, registra ou valida capabilities e resources no Cataloguer. Segundo, converte mensagens MQTT em payloads REST aceitos pelo Adaptor. Terceiro, publica métricas internas para que o painel acompanhe o estado da integração. Essa terceira função é particularmente importante: sem observabilidade, o operador poderia visualizar telemetria local sem perceber que a persistência externa está degradada. A solução evita essa ambiguidade ao expor `last_status`, `last_ok`, taxa de envio, fila, falhas e latência média.</p>
+    <p>A Figura 4 detalha o caminho da telemetria no trecho MQTT-InterSCity. A mensagem é recebida pela bridge, normalizada, submetida ao controle de carga e enviada aos serviços Catalog, Adaptor e Collector. A ligação de retorno ao dashboard representa o uso das métricas da própria bridge como fonte de observabilidade, permitindo ao operador diferenciar falha local de indisponibilidade da plataforma externa.</p>
+    <div class="figure">
+      <svg viewBox="0 0 980 360" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr3" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#7c3aed"/>
+          </marker>
+        </defs>
+        <rect width="980" height="360" fill="#f8fbff"/>
+        <text x="35" y="42" font-family="Arial" font-size="24" font-weight="700" fill="#102039">Caminho da telemetria até o InterSCity</text>
+        <g font-family="Arial" fill="#102039">
+          <rect x="55" y="115" width="155" height="86" rx="6" fill="#dbeafe" stroke="#2563eb"/>
+          <text x="95" y="150" font-size="16" font-weight="700">MQTT</text>
+          <text x="78" y="175" font-size="12">ac-iot/+/sensores</text>
+          <rect x="270" y="115" width="170" height="86" rx="6" fill="#ede9fe" stroke="#7c3aed"/>
+          <text x="312" y="150" font-size="16" font-weight="700">Bridge C++</text>
+          <text x="305" y="175" font-size="12">filtra, coalesce, limita RPS</text>
+          <rect x="520" y="65" width="170" height="70" rx="6" fill="#fef3c7" stroke="#d97706"/>
+          <text x="575" y="96" font-size="16" font-weight="700">Catalog</text>
+          <text x="555" y="118" font-size="12">capabilities/resources</text>
+          <rect x="520" y="155" width="170" height="70" rx="6" fill="#dcfce7" stroke="#16a34a"/>
+          <text x="575" y="186" font-size="16" font-weight="700">Adaptor</text>
+          <text x="565" y="208" font-size="12">POST telemetria</text>
+          <rect x="520" y="245" width="170" height="70" rx="6" fill="#e0f2fe" stroke="#0284c7"/>
+          <text x="574" y="276" font-size="16" font-weight="700">Collector</text>
+          <text x="555" y="298" font-size="12">GET data/last</text>
+          <rect x="765" y="155" width="160" height="70" rx="6" fill="#fff" stroke="#64748b"/>
+          <text x="807" y="186" font-size="16" font-weight="700">Dashboard</text>
+          <text x="800" y="208" font-size="12">estado IC e consulta</text>
+        </g>
+        <line x1="210" y1="158" x2="265" y2="158" stroke="#7c3aed" stroke-width="3" marker-end="url(#arr3)"/>
+        <line x1="440" y1="148" x2="515" y2="100" stroke="#7c3aed" stroke-width="3" marker-end="url(#arr3)"/>
+        <line x1="440" y1="165" x2="515" y2="190" stroke="#7c3aed" stroke-width="3" marker-end="url(#arr3)"/>
+        <line x1="690" y1="280" x2="760" y2="195" stroke="#7c3aed" stroke-width="3" marker-end="url(#arr3)"/>
+      </svg>
+      <div class="caption">Figura 4 - Fluxo técnico de tradução MQTT para REST no InterSCity, incluindo catalogação, envio ao Adaptor, consulta ao Collector e retorno de observabilidade.</div>
+    </div>
+
+    <p>Nos testes finais, a bridge publicou métricas com `last_status=201` e `last_ok=true`, indicando aceitação de telemetria pelo Adaptor. O dashboard de métricas registrou 100% de sucesso no período capturado, 1.000 salas online, 8 salas críticas e integração via bridge. Esses resultados demonstram que a comunicação com InterSCity não foi apenas descrita no projeto, mas efetivamente exercitada durante a execução local.</p>
+    <p>A Figura 5 registra a visualização do Cataloguer InterSCity com recursos AC-IoT cadastrados. A captura demonstra que os recursos apresentam UUID, descrição, coordenadas, status ativo e lista de capabilities, o que confirma a aderência do modelo de dados do protótipo ao formato de recursos esperado pela plataforma.</p>
+
+    <div class="figure">
+      <img src="assets/relatorio-final/interscity-catalog.png" alt="Catálogo InterSCity UFMA">
+      <div class="caption">Figura 5 - Evidência de catalogação no InterSCity: recursos AC-IoT cadastrados com UUID, localização, status e capabilities.</div>
+    </div>
+  </section>
+
+  <section class="page">
+    <h2 id="testes">7. Testes e Resultados</h2>
+    <h3>7.1 Critérios de validação</h3>
+    <table>
+      <tr><th>Critério</th><th>Resultado observado</th><th>Status</th></tr>
+      <tr><td>Containers principais em execução</td><td>mosquitto, simulator, bridge, web e nodered ativos; healthcheck OK em mosquitto, web e Node-RED.</td><td>Aprovado</td></tr>
+      <tr><td>Publicação MQTT</td><td>Amostras recebidas em `ac-iot/+/sensores` com temperatura, umidade, luminosidade, presença e atuadores.</td><td>Aprovado</td></tr>
+      <tr><td>Dashboard operacional</td><td>1.000 salas online, blocos operacionais, tabela ao vivo, comando em massa e log de eventos.</td><td>Aprovado</td></tr>
+      <tr><td>Bridge InterSCity</td><td>8 workers, fila máxima 20.000, `last_status=201`, `last_ok=true`, taxa próxima de 20 req/s.</td><td>Aprovado</td></tr>
+      <tr><td>Node-RED</td><td>Fluxo de automação AC conectado ao tópico de sensores e envio de comandos.</td><td>Aprovado</td></tr>
+    </table>
+    <p>A Figura 6 apresenta a interface operacional principal em funcionamento. A captura mostra os KPIs globais, os blocos operacionais, a tabela de telemetria ao vivo, o painel de comando em massa, a sala selecionada e o log de eventos. Tecnicamente, essa tela comprova o consumo contínuo de MQTT via WebSocket e a consolidação de leituras por sala/bloco, permitindo que o operador identifique temperatura crítica, presença, estado do ar-condicionado, estado da luz e heartbeat.</p>
+
+    <div class="figure">
+      <img src="assets/relatorio-final/painel-operacional.png" alt="Painel operacional AC-IoT">
+      <div class="caption">Figura 6 - Painel operacional em tempo real do AC-IoT UFMA com KPIs, blocos, telemetria ao vivo, comandos e log de eventos.</div>
+    </div>
+  </section>
+
+  <section class="page">
+    <p>A Figura 7 complementa a visão operacional ao apresentar o dashboard de métricas sistêmicas. Diferentemente da tela de operação sala a sala, essa captura evidencia indicadores agregados: mensagens MQTT processadas, taxa média de mensagens, tráfego observado, salas online, sucesso da bridge InterSCity, latência média, tráfego real para o InterSCity e último status HTTP. Esses dados são essenciais para avaliar saúde distribuída e não apenas comportamento funcional do frontend.</p>
+    <div class="figure">
+      <img src="assets/relatorio-final/dashboard-metricas.png" alt="Dashboard de métricas AC-IoT">
+      <div class="caption">Figura 7 - Dashboard sistêmico com métricas de processamento MQTT, operação das salas e integração InterSCity pela bridge.</div>
+    </div>
+
+    <p>A Figura 8 mostra o fluxo Node-RED utilizado para automação AC/Luz. A entrada assina o tópico de sensores, o nó de função aplica a lógica de automação com temporizadores estáveis, e a saída publica comandos de retorno. A presença dos nós de depuração evidencia que o fluxo também atua como instrumento de inspeção, apoiando testes e validação de mensagens durante o desenvolvimento.</p>
+    <div class="figure">
+      <img src="assets/relatorio-final/node-red.png" alt="Fluxo Node-RED de automação AC">
+      <div class="caption">Figura 8 - Fluxo Node-RED de automação AC/Luz com assinatura de sensores, função de decisão, publicação de comando e nós de depuração.</div>
+    </div>
+
+    <h3>7.2 Resultados quantitativos e qualitativos</h3>
+    <div class="two-col">
+      <div class="card">
+        <strong>Escala local validada</strong>
+        <p class="small">1.000 salas simuladas, 40 blocos operacionais com 25 salas/bloco e telemetria atualizada no painel.</p>
+      </div>
+      <div class="card">
+        <strong>Integração InterSCity</strong>
+        <p class="small">Bridge com 8 workers, limite de 20 requisições/s, último status HTTP 201 e sucesso de envio no período capturado.</p>
+      </div>
+      <div class="card">
+        <strong>MQTT em tempo real</strong>
+        <p class="small">Painel e dashboard consumiram leituras por WebSocket, registrando mensagens recebidas e eventos críticos.</p>
+      </div>
+      <div class="card">
+        <strong>Operação assistida</strong>
+        <p class="small">Comando em massa por escopo, seleção de sala, consulta InterSCity e log de eventos para apoio ao operador.</p>
+      </div>
+    </div>
+
+    <h3>7.3 Discussão técnica</h3>
+    <p>O resultado demonstra que o sistema local permanece funcional enquanto a comunicação externa é controlada por taxa e executada em segundo plano. O uso de fila coalescente é tecnicamente adequado para monitoramento operacional porque, quando múltiplas leituras de uma mesma sala se acumulam, o estado mais recente possui maior valor para tomada de decisão imediata do que leituras intermediárias atrasadas. Essa escolha reduz pressão sobre o serviço externo e preserva a atualização local do painel.</p>
+    <p>A publicação das métricas da bridge no próprio barramento MQTT também representa uma decisão arquitetural relevante: a observabilidade passa a fazer parte do fluxo distribuído, não ficando restrita a logs de container. Dessa forma, o painel distingue três estados: operação local MQTT, integração InterSCity via bridge e condição instável/sem resposta. Em sistemas IoT distribuídos, essa separação é necessária porque disponibilidade local e disponibilidade de persistência externa são propriedades diferentes.</p>
+    <p>Como limitação, a fila da bridge ainda é em memória; portanto, quedas longas do InterSCity podem levar à perda de telemetria caso a fila alcance o limite ou o container seja reiniciado. Além disso, a autenticação MQTT e o uso sistemático de TLS interno não foram ativados na versão final do protótipo. Para produção, recomenda-se persistência de eventos, autenticação por serviço/dispositivo, implantação com broker escalável, métricas Prometheus/Grafana e mecanismos de reprocessamento.</p>
+  </section>
+
+  <section class="page">
+    <h2 id="conclusao">8. Conclusão</h2>
+    <p>O projeto <strong>Gestão Energética dos Ar-Condicionados das Salas de Aula do Prédio Paulo Freire via IoT</strong> atingiu o objetivo atualizado de implementar e validar um sistema distribuído funcional para monitoramento, automação e integração externa de ambientes acadêmicos climatizados. A solução final preserva a motivação apresentada no TAP, desperdício energético associado ao controle manual e à ausência de visibilidade operacional, mas a materializa em uma arquitetura mais robusta para avaliação distribuída: simulador C++17, MQTT, Node-RED, painel web, dashboard de métricas e bridge InterSCity.</p>
+    <p>As evidências finais mostram operação com 1.000 salas simuladas, dashboard em tempo real, Node-RED ativo, bridge enviando telemetria ao InterSCity com HTTP 201 e recursos visíveis no Cataloguer. O projeto evidencia propriedades centrais de Sistemas Distribuídos: comunicação assíncrona, baixo acoplamento, concorrência, tolerância parcial a falhas externas, observabilidade, controle de carga e escalabilidade configurável. A evolução natural envolve substituir sensores simulados por dispositivos físicos, persistir filas, reforçar segurança e migrar para uma infraestrutura escalável com broker MQTT replicável e orquestração Kubernetes.</p>
+
+    <h3>8.1 Trabalhos futuros</h3>
+    <ul>
+      <li>Adicionar autenticação e autorização MQTT por serviço ou dispositivo.</li>
+      <li>Persistir fila de telemetria para reenvio após indisponibilidade prolongada do InterSCity.</li>
+      <li>Implantar EMQX com shared subscriptions para múltiplas réplicas da bridge.</li>
+      <li>Adicionar Prometheus/Grafana para métricas de fila, falha e latência.</li>
+      <li>Integrar hardware físico com ESP32, relé, infravermelho e medição de corrente.</li>
+    </ul>
+
+    <h2 id="referencias">Referências</h2>
+    <ol>
+      <li>CIHOLAS, P.; LENNIE, A.; SADIGOVA, P.; SUCH, J. M. The security of smart buildings: a systematic literature review. <em>arXiv preprint arXiv:1901.05837</em>, 2019.</li>
+      <li>DIAS, J. P.; RESTIVO, A.; FERREIRA, H. S. Empowering visual Internet-of-Things mashups with self-healing capabilities. <em>arXiv preprint arXiv:2103.07395</em>, 2021.</li>
+      <li>HINDY, H.; BAYNE, E.; BURES, M.; ATKINSON, R.; TACHTATZIS, C.; BELLEKENS, X. Machine learning based IoT intrusion detection system: an MQTT case study. <em>arXiv preprint arXiv:2006.15340</em>, 2020.</li>
+      <li>MERABET, G. H.; ESSAAIDI, M.; BEN HADDOU, M.; QOLOMANY, B.; QADIR, J.; ANAN, M.; AL-FUQAHA, A.; ABID, M. R.; BENHADDOU, D. Intelligent building control systems for thermal comfort and energy-efficiency: a systematic review of artificial intelligence-assisted techniques. <em>arXiv preprint arXiv:2104.02214</em>, 2021.</li>
+      <li>FAHMIDEH, M.; ZOWGHI, D. IoT smart city architectures: an analytical evaluation. <em>arXiv preprint arXiv:2004.08036</em>, 2020.</li>
+      <li>TEJASVI, P. C.; RAJARAMAN, V.; PUTHUPARAMBIL, A. B.; PANKAJ, A.; AMRUTUR, B. Vermillion: a high-performance scalable IoT middleware for smart cities. <em>arXiv preprint arXiv:2003.08361</em>, 2020.</li>
+      <li>WASEEM, M.; LIANG, P.; SHAHIN, M. A systematic mapping study on microservices architecture in DevOps. <em>arXiv preprint arXiv:2008.07729</em>, 2020.</li>
+    </ol>
+
+  </section>
+</body>
+</html>
